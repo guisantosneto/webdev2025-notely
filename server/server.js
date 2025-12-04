@@ -3,7 +3,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { MongoClient, ObjectId } = require('mongodb'); // Adicionado ObjectId para futuras operações
+const { MongoClient, ObjectId } = require('mongodb'); 
 
 // --- Configurações ---
 const PORT = 3000;
@@ -22,8 +22,7 @@ async function startServer() {
         db = client.db(DB_NAME); 
         console.log(`✅ Conectado com sucesso ao MongoDB: ${DB_NAME}`);
 
-        // --- INSERÇÃO DE TESTE (Opcional, mas útil para verificar a BD) ---
-        // Se a coleção 'notes' não existir, este comando irá criá-la.
+        // --- INSERÇÃO DE TESTE (Verificação inicial) ---
         const notesCollection = db.collection('notes');
         const count = await notesCollection.countDocuments({});
         
@@ -41,8 +40,9 @@ async function startServer() {
         // ------------------------------------------------------------------
 
         // --- 2. Iniciar o Servidor HTTP ---
-        const server = http.createServer((req, res) => {
-            handleRequest(req, res);
+        // Alterado de (req, res) para (request, response) como pedido
+        const server = http.createServer((request, response) => {
+            handleRequest(request, response);
         });
 
         server.listen(PORT, () => {
@@ -56,63 +56,80 @@ async function startServer() {
 }
 
 // Função para servir ficheiros estáticos (HTML, CSS, JS)
-function serveStaticFile(filePath, mimeType, res) {
+function serveStaticFile(filePath, mimeType, response) {
     fs.readFile(filePath, (err, content) => {
         if (err) {
-            // Este erro é comum se o ficheiro não for encontrado
             console.error(`Erro ao ler o ficheiro ${filePath}:`, err.code);
-            res.writeHead(404, { 'Content-Type': 'text/plain' });
-            res.end('404 Not Found');
+            response.writeHead(404, { 'Content-Type': 'text/plain' });
+            response.end('404 Not Found');
             return;
         }
-        res.writeHead(200, { 'Content-Type': mimeType });
-        res.end(content);
+        response.writeHead(200, { 'Content-Type': mimeType });
+        response.end(content);
     });
 }
 
 // Função que trata os pedidos HTTP
-function handleRequest(req, res) {
+// Note que adicionei 'async' aqui para podermos esperar pela resposta da BD
+async function handleRequest(request, response) {
     
     // Caminho da pasta 'client', relativo à pasta 'server'
     const clientPath = path.join(__dirname, '..', 'client'); 
 
     // --- Tratamento de Rotas Estáticas ---
 
-    // 1. Ignorar o pedido de Favicon (para evitar erros desnecessários)
-    if (req.url === '/favicon.ico') {
-        res.writeHead(204); // 204 No Content
-        res.end();
+    // 1. Ignorar o pedido de Favicon
+    if (request.url === '/favicon.ico') {
+        response.writeHead(204); 
+        response.end();
         return;
     }
 
-    // 2. Servir a página principal (Single Page Application)
-    if (req.url === '/' || req.url === '/index.html') {
+    // 2. Servir a página principal
+    if (request.url === '/' || request.url === '/index.html') {
         const filePath = path.join(clientPath, 'index.html');
-        serveStaticFile(filePath, 'text/html', res);
+        serveStaticFile(filePath, 'text/html', response);
         return;
     }
     
     // 3. Servir ficheiros CSS e JS
-    if (req.url.endsWith('.css')) {
-        const filePath = path.join(clientPath, req.url);
-        serveStaticFile(filePath, 'text/css', res);
+    if (request.url.endsWith('.css')) {
+        const filePath = path.join(clientPath, request.url);
+        serveStaticFile(filePath, 'text/css', response);
         return;
     }
     
-    if (req.url.endsWith('.js')) {
-        const filePath = path.join(clientPath, req.url);
-        serveStaticFile(filePath, 'application/javascript', res);
+    if (request.url.endsWith('.js')) {
+        const filePath = path.join(clientPath, request.url);
+        serveStaticFile(filePath, 'application/javascript', response);
         return;
     }
 
-    // --- Fim do Tratamento Estático ---
-    
-    // FUTURO: Aqui é onde irá adicionar o tratamento de rotas API para o Notely
-    // (ex: /api/notes, /api/topics)
+    // --- ROTAS API (Onde o Back-end fala com a Base de Dados) ---
 
-    // Se a rota não foi tratada
-    res.writeHead(404);
-    res.end('404 Not Found');
+    // Rota GET /api/notes -> Devolve todas as notas em formato JSON
+    if (request.url === '/api/notes' && request.method === 'GET') {
+        try {
+            const collection = db.collection('notes');
+            
+            // Vai buscar tudo à BD e converte num array
+            const notes = await collection.find({}).toArray();
+            
+            // Responde com os dados em JSON
+            response.writeHead(200, { 'Content-Type': 'application/json' });
+            response.end(JSON.stringify(notes));
+            
+        } catch (error) {
+            console.error("Erro ao buscar notas:", error);
+            response.writeHead(500, { 'Content-Type': 'application/json' });
+            response.end(JSON.stringify({ error: "Erro interno ao buscar notas" }));
+        }
+        return; // Importante para não continuar e dar 404
+    }
+
+    // --- Se a rota não foi encontrada ---
+    response.writeHead(404);
+    response.end('404 Not Found');
 }
 
 // Iniciar a aplicação
