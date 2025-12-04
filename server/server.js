@@ -6,7 +6,7 @@ const path = require('path');
 const { MongoClient, ObjectId } = require('mongodb'); // Adicionado ObjectId para futuras operações
 
 // --- Configurações ---
-const PORT = 6000;
+const PORT = 3000;
 const DB_URI = 'mongodb://localhost:27017'; 
 const DB_NAME = 'notely_db'; 
 
