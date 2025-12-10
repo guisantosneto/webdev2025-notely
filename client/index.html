@@ -2,10 +2,45 @@
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notely</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Notely</h1>
-    <p></p>
+
+    <div id="app-container">
+        
+        <aside id="sidebar">
+            <div class="brand">
+                <h1>Notely</h1>
+            </div>
+
+            <div class="actions">
+                <button id="btn-new-note" class="btn-primary">+ New Note</button>
+            </div>
+
+            <div class="topics-section">
+                <h3>Topics</h3>
+                <ul id="topics-list">
+                    <li class="active" onclick="filtrarPorTopico(null)">Todas as Notas</li>
+                </ul>
+            </div>
+        </aside>
+
+        <main id="main-content">
+            <header>
+                <h2 id="current-topic-title">Todas as Notas</h2>
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Search notes...">
+                </div>
+            </header>
+
+            <div id="notes-grid">
+                </div>
+        </main>
+
+    </div>
+
+    <script src="app.js"></script>
 </body>
 </html>

@@ -1,0 +1,80 @@
+/* Resets básicos */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; height: 100vh; overflow: hidden; }
+
+/* Layout Geral (Flexbox) */
+#app-container { display: flex; height: 100%; }
+
+/* Sidebar */
+#sidebar {
+    width: 260px;
+    background-color: #ffffff;
+    border-right: 1px solid #e0e0e0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.brand h1 { font-size: 24px; margin-bottom: 30px; color: #333; }
+
+.btn-primary {
+    width: 100%;
+    padding: 10px;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-bottom: 30px;
+}
+.btn-primary:hover { background-color: #555; }
+
+.topics-section h3 { font-size: 14px; color: #888; text-transform: uppercase; margin-bottom: 10px; }
+#topics-list { list-style: none; }
+#topics-list li {
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    color: #555;
+    margin-bottom: 5px;
+}
+#topics-list li:hover { background-color: #f0f0f0; }
+#topics-list li.active { background-color: #e8f0fe; color: #1a73e8; font-weight: bold; }
+
+/* Conteúdo Principal */
+#main-content { flex-grow: 1; padding: 40px; overflow-y: auto; }
+
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+.search-box input { padding: 10px; border-radius: 20px; border: 1px solid #ccc; width: 200px; }
+
+/* Grelha de Notas */
+#notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+/* O Estilo do "Sticky Note" */
+.note-card {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s;
+    position: relative;
+}
+.note-card:hover { transform: translateY(-5px); box-shadow: 0 8px 12px rgba(0,0,0,0.15); }
+
+.note-card h3 { font-size: 18px; margin-bottom: 10px; color: #333; }
+.note-card p { font-size: 14px; color: #666; line-height: 1.5; flex-grow: 1; }
+.note-card .date { font-size: 11px; color: #999; margin-top: 10px; text-align: right; }
+
+/* Cores das Notas (Classes utilitárias) */
+.bg-yellow { background-color: #fff7d1; }
+.bg-blue { background-color: #d1eaff; }
+.bg-green { background-color: #d1ffdb; }
+.bg-red { background-color: #ffd1d1; }
