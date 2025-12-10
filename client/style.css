@@ -1,11 +1,24 @@
-/* Resets básicos */
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; height: 100vh; overflow: hidden; }
+/* --- Resets Básicos --- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
-/* Layout Geral (Flexbox) */
-#app-container { display: flex; height: 100%; }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f4f4;
+    height: 100vh;
+    overflow: hidden;
+}
 
-/* Sidebar */
+/* --- Layout Geral --- */
+#app-container {
+    display: flex;
+    height: 100%;
+}
+
+/* --- Barra Lateral (Sidebar) --- */
 #sidebar {
     width: 260px;
     background-color: #ffffff;
@@ -15,7 +28,11 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
     flex-direction: column;
 }
 
-.brand h1 { font-size: 24px; margin-bottom: 30px; color: #333; }
+.brand h1 {
+    font-size: 24px;
+    margin-bottom: 30px;
+    color: #333;
+}
 
 .btn-primary {
     width: 100%;
@@ -28,10 +45,22 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
     font-size: 16px;
     margin-bottom: 30px;
 }
-.btn-primary:hover { background-color: #555; }
 
-.topics-section h3 { font-size: 14px; color: #888; text-transform: uppercase; margin-bottom: 10px; }
-#topics-list { list-style: none; }
+.btn-primary:hover {
+    background-color: #555;
+}
+
+.topics-section h3 {
+    font-size: 14px;
+    color: #888;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+#topics-list {
+    list-style: none;
+}
+
 #topics-list li {
     padding: 10px;
     cursor: pointer;
@@ -39,42 +68,194 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
     color: #555;
     margin-bottom: 5px;
 }
-#topics-list li:hover { background-color: #f0f0f0; }
-#topics-list li.active { background-color: #e8f0fe; color: #1a73e8; font-weight: bold; }
 
-/* Conteúdo Principal */
-#main-content { flex-grow: 1; padding: 40px; overflow-y: auto; }
+#topics-list li:hover {
+    background-color: #f0f0f0;
+}
 
-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-.search-box input { padding: 10px; border-radius: 20px; border: 1px solid #ccc; width: 200px; }
+#topics-list li.active {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+    font-weight: bold;
+}
 
-/* Grelha de Notas */
+/* --- Conteúdo Principal (Main) --- */
+#main-content {
+    flex-grow: 1;
+    padding: 40px;
+    overflow-y: auto;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.search-box input {
+    padding: 10px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+    width: 200px;
+}
+
 #notes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 20px;
 }
 
-/* O Estilo do "Sticky Note" */
+/* --- Estilo dos Cartões de Notas --- */
 .note-card {
     background-color: #fff;
     padding: 20px;
     border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     min-height: 200px;
     display: flex;
     flex-direction: column;
     transition: transform 0.2s;
     position: relative;
 }
-.note-card:hover { transform: translateY(-5px); box-shadow: 0 8px 12px rgba(0,0,0,0.15); }
 
-.note-card h3 { font-size: 18px; margin-bottom: 10px; color: #333; }
-.note-card p { font-size: 14px; color: #666; line-height: 1.5; flex-grow: 1; }
-.note-card .date { font-size: 11px; color: #999; margin-top: 10px; text-align: right; }
+.note-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
 
-/* Cores das Notas (Classes utilitárias) */
-.bg-yellow { background-color: #fff7d1; }
-.bg-blue { background-color: #d1eaff; }
-.bg-green { background-color: #d1ffdb; }
-.bg-red { background-color: #ffd1d1; }
+.note-card h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.note-card p {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.5;
+    flex-grow: 1;
+    white-space: pre-wrap; /* Mantém os parágrafos do texto */
+}
+
+.note-card .date {
+    font-size: 11px;
+    color: #999;
+    margin-top: 10px;
+    text-align: right;
+}
+
+/* --- Cores das Notas --- */
+.bg-yellow {
+    background-color: #fff7d1;
+}
+
+.bg-blue {
+    background-color: #d1eaff;
+}
+
+.bg-green {
+    background-color: #d1ffdb;
+}
+
+.bg-red {
+    background-color: #ffd1d1;
+}
+
+/* --- MODAL (Janela de Criar Nota) --- */
+.hidden {
+    display: none !important;
+}
+
+#modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    width: 400px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#modal-content h2 {
+    margin-top: 0;
+    color: #333;
+}
+
+#modal-content label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #666;
+    margin-bottom: -10px;
+}
+
+#modal-content input,
+#modal-content select,
+#modal-content textarea {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    width: 100%;
+    font-family: inherit;
+}
+
+#modal-content textarea {
+    height: 100px;
+    resize: none;
+}
+
+/* Seletor de Cores no Modal */
+.color-picker {
+    display: flex;
+    gap: 10px;
+}
+
+.color-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+}
+
+.color-btn.selected {
+    border-color: #333;
+    transform: scale(1.1);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+/* Botões do Modal */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+#btn-cancel {
+    background: transparent;
+    border: 1px solid #ccc;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#btn-save {
+    width: auto;
+    margin-bottom: 0;
+}
