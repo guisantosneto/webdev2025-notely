@@ -259,3 +259,7 @@ header {
     width: auto;
     margin-bottom: 0;
 }
+
+#root {
+    height: 100%;
+}

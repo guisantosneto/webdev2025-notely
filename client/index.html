@@ -5,70 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notely</title>
     <link rel="stylesheet" href="style.css">
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
 
-    <div id="app-container">
-        
-        <aside id="sidebar">
-            <div class="brand">
-                <h1>Notely</h1>
-            </div>
+    <div id="root"></div>
 
-            <div class="actions">
-                <button id="btn-new-note" class="btn-primary">+ New Note</button>
-            </div>
-
-            <div class="topics-section">
-                <h3>Topics</h3>
-                <ul id="topics-list">
-                    </ul>
-            </div>
-        </aside>
-
-        <main id="main-content">
-            <header>
-                <h2 id="current-topic-title">Todas as Notas</h2>
-                <div class="search-box">
-                    <input type="text" id="search-input" placeholder="Search notes...">
-                </div>
-            </header>
-
-            <div id="notes-grid">
-                </div>
-        </main>
-
-    </div>
-
-    <div id="modal-overlay" class="hidden">
-        <div id="modal-content">
-            <h2>Nova Nota</h2>
-            
-            <label>Título</label>
-            <input type="text" id="modal-title" placeholder="Ex: Comprar Leite">
-
-            <label>Tópico</label>
-            <select id="modal-topic">
-                </select>
-
-            <label>Cor</label>
-            <div class="color-picker">
-                <button class="color-btn bg-yellow selected" data-color="yellow"></button>
-                <button class="color-btn bg-blue" data-color="blue"></button>
-                <button class="color-btn bg-green" data-color="green"></button>
-                <button class="color-btn bg-red" data-color="red"></button>
-            </div>
-
-            <label>Conteúdo</label>
-            <textarea id="modal-text" placeholder="Escreve aqui a tua nota..."></textarea>
-
-            <div class="modal-actions">
-                <button id="btn-cancel">Cancelar</button>
-                <button id="btn-save" class="btn-primary">Guardar Nota</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
+    <script type="text/babel" src="app.js"></script>
 </body>
 </html>

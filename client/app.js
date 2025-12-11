@@ -1,214 +1,179 @@
 // client/app.js
+const { useState, useEffect } = React;
 
-let allNotes = [];
-let allTopics = [];
-let currentTopicId = null; 
-let selectedColor = 'yellow'; // Cor selecionada no modal
+// --- COMPONENTE: NOTA INDIVIDUAL ---
+function Note({ note }) {
+    // Formatar data
+    const dateStr = new Date(note.createdAt).toLocaleDateString();
+    // Classes de cor baseadas no style.css
+    const colorClass = note.color ? `bg-${note.color}` : 'bg-yellow';
 
-document.addEventListener('DOMContentLoaded', async () => {
-    await carregarTopicos();
-    await carregarNotas();
-    setupEventListeners();
-});
-
-function setupEventListeners() {
-    // 1. Botão "+ New Note" abre o modal
-    const btnNew = document.getElementById('btn-new-note');
-    if (btnNew) btnNew.addEventListener('click', abrirModal);
-
-    // 2. Botões do Modal
-    const btnCancel = document.getElementById('btn-cancel');
-    if (btnCancel) btnCancel.addEventListener('click', fecharModal);
-
-    const btnSave = document.getElementById('btn-save');
-    if (btnSave) btnSave.addEventListener('click', salvarNotaDoModal);
-
-    // 3. Seleção de Cores no Modal
-    document.querySelectorAll('.color-btn').forEach(btn => {
-        btn.addEventListener('click', (event) => {
-            // Remove classe 'selected' de todos e adiciona ao clicado
-            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
-            event.target.classList.add('selected');
-            selectedColor = event.target.dataset.color;
-        });
-    });
-
-    // 4. Pesquisa
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-        searchInput.addEventListener('input', (event) => {
-            const texto = event.target.value.toLowerCase();
-            const notasFiltradas = allNotes.filter(n => 
-                n.title.toLowerCase().includes(texto) || 
-                n.content.toLowerCase().includes(texto)
-            );
-            renderizarNotas(notasFiltradas);
-        });
-    }
+    return (
+        <div className={`note-card ${colorClass}`}>
+            <h3>{note.title}</h3>
+            <p>{note.content}</p>
+            <div className="date">{dateStr}</div>
+        </div>
+    );
 }
 
-// --- LÓGICA DO MODAL ---
+// --- COMPONENTE PRINCIPAL (APP) ---
+function App() {
+    // ESTADOS (A "memória" da aplicação)
+    const [notes, setNotes] = useState([]);
+    const [topics, setTopics] = useState([]);
+    const [activeTopicId, setActiveTopicId] = useState(null); // null = Todas as notas
+    const [search, setSearch] = useState("");
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-function abrirModal() {
-    // Preencher o select de tópicos
-    const select = document.getElementById('modal-topic');
-    select.innerHTML = '<option value="">Sem Tópico</option>';
-    
-    allTopics.forEach(topic => {
-        const option = document.createElement('option');
-        option.value = topic._id;
-        option.innerText = topic.name;
-        select.appendChild(option);
-    });
+    // DADOS PARA NOVA NOTA (Estado do Formulário)
+    const [newNoteTitle, setNewNoteTitle] = useState("");
+    const [newNoteContent, setNewNoteContent] = useState("");
+    const [newNoteTopic, setNewNoteTopic] = useState("");
+    const [newNoteColor, setNewNoteColor] = useState("yellow");
 
-    // Se já estivermos num tópico específico, selecionar automaticamente
-    if (currentTopicId) {
-        select.value = currentTopicId;
-    }
+    // 1. CARREGAR DADOS AO INICIAR
+    useEffect(() => {
+        carregarDados();
+    }, []);
 
-    // Limpar campos
-    document.getElementById('modal-title').value = '';
-    document.getElementById('modal-text').value = '';
-    selectedColor = 'yellow'; // Reset cor
-    
-    // Reset visual dos botões de cor
-    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
-    const defaultColorBtn = document.querySelector('.bg-yellow');
-    if (defaultColorBtn) defaultColorBtn.classList.add('selected');
+    const carregarDados = async () => {
+        try {
+            const resNotes = await fetch('/api/notes');
+            const dataNotes = await resNotes.json();
+            setNotes(dataNotes);
 
-    // Mostrar modal
-    document.getElementById('modal-overlay').classList.remove('hidden');
-}
-
-function fecharModal() {
-    document.getElementById('modal-overlay').classList.add('hidden');
-}
-
-async function salvarNotaDoModal() {
-    const tituloInput = document.getElementById('modal-title');
-    const textoInput = document.getElementById('modal-text');
-    const topicoInput = document.getElementById('modal-topic');
-
-    const titulo = tituloInput.value;
-    const texto = textoInput.value;
-    const topicoId = topicoInput.value || null;
-
-    if (!titulo) {
-        alert("A nota precisa de um título!");
-        return;
-    }
-
-    const novaNota = {
-        title: titulo,
-        content: texto,
-        color: selectedColor,
-        topicId: topicoId,
-        createdAt: new Date()
+            const resTopics = await fetch('/api/topics');
+            const dataTopics = await resTopics.json();
+            setTopics(dataTopics);
+        } catch (error) {
+            console.error("Erro ao carregar:", error);
+        }
     };
 
-    try {
-        const response = await fetch('/api/notes', {
+    // 2. GUARDAR NOVA NOTA
+    const handleSaveNote = async () => {
+        if (!newNoteTitle) return alert("Título é obrigatório!");
+
+        const novaNota = {
+            title: newNoteTitle,
+            content: newNoteContent,
+            color: newNoteColor,
+            topicId: newNoteTopic || null
+        };
+
+        const res = await fetch('/api/notes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(novaNota)
         });
 
-        if (response.ok) {
-            const notaSalva = await response.json();
-            allNotes.push(notaSalva);
-            
-            // Se a nota for do tópico atual (ou estivermos a ver "Todas"), atualizamos o ecrã
-            if (currentTopicId === null || currentTopicId === topicoId) {
-                // Força atualização visual
-                window.filtrarPorTopico(currentTopicId);
-            }
-            
-            fecharModal();
-        } else {
-            alert('Erro ao guardar nota.');
+        if (res.ok) {
+            setIsModalOpen(false); // Fecha modal
+            setNewNoteTitle(""); setNewNoteContent(""); // Limpa form
+            carregarDados(); // Recarrega lista
         }
-    } catch (error) {
-        console.error("Erro:", error);
-    }
-}
+    };
 
-// --- FUNÇÕES DE API E RENDERIZAÇÃO ---
-
-async function carregarTopicos() {
-    try {
-        const response = await fetch('/api/topics');
-        allTopics = await response.json();
-        
-        const lista = document.getElementById('topics-list');
-        lista.innerHTML = `<li class="active" onclick="filtrarPorTopico(null)">Todas as Notas</li>`;
-
-        allTopics.forEach(topic => {
-            const li = document.createElement('li');
-            li.innerText = topic.name;
-            li.dataset.id = topic._id; 
-            li.onclick = () => filtrarPorTopico(topic._id);
-            lista.appendChild(li);
-        });
-    } catch (error) {
-        console.error("Erro:", error);
-    }
-}
-
-async function carregarNotas() {
-    try {
-        const response = await fetch('/api/notes');
-        allNotes = await response.json();
-        renderizarNotas(allNotes); 
-    } catch (error) {
-        console.error("Erro:", error);
-    }
-}
-
-function renderizarNotas(notasParaMostrar) {
-    const grid = document.getElementById('notes-grid');
-    grid.innerHTML = ''; 
-
-    if (notasParaMostrar.length === 0) {
-        grid.innerHTML = '<p style="color:#666; width:100%;">Nenhuma nota encontrada.</p>';
-        return;
-    }
-
-    notasParaMostrar.forEach(note => {
-        const card = document.createElement('div');
-        const corClass = note.color ? `bg-${note.color}` : 'bg-yellow';
-        card.className = `note-card ${corClass}`;
-
-        // Formata data
-        const dataFormatada = new Date(note.createdAt).toLocaleDateString();
-
-        card.innerHTML = `
-            <h3>${note.title}</h3>
-            <p>${note.content}</p>
-            <div class="date">${dataFormatada}</div>
-        `;
-        grid.appendChild(card);
-    });
-}
-
-window.filtrarPorTopico = function(topicId) {
-    currentTopicId = topicId;
-    
-    const items = document.querySelectorAll('#topics-list li');
-    items.forEach(li => {
-        li.classList.remove('active');
-        if (li.dataset.id === topicId || (topicId === null && !li.dataset.id)) {
-            li.classList.add('active');
-        }
+    // 3. FILTRAGEM
+    // Filtra primeiro por Tópico, depois por Pesquisa
+    const filteredNotes = notes.filter(note => {
+        const matchTopic = activeTopicId === null || note.topicId === activeTopicId;
+        const matchSearch = note.title.toLowerCase().includes(search.toLowerCase()) || 
+                            note.content.toLowerCase().includes(search.toLowerCase());
+        return matchTopic && matchSearch;
     });
 
-    const titulo = document.getElementById('current-topic-title');
-    if (topicId === null) {
-        titulo.innerText = "Todas as Notas";
-        renderizarNotas(allNotes);
-    } else {
-        const topicoObj = allTopics.find(t => t._id === topicId);
-        titulo.innerText = topicoObj ? topicoObj.name : "Tópico";
-        const notasFiltradas = allNotes.filter(n => n.topicId === topicId);
-        renderizarNotas(notasFiltradas);
-    }
-};
+    const activeTopicName = activeTopicId 
+        ? topics.find(t => t._id === activeTopicId)?.name 
+        : "Todas as Notas";
+
+    return (
+        <div id="app-container">
+            {/* SIDEBAR */}
+            <aside id="sidebar">
+                <div className="brand"><h1>Notely</h1></div>
+                <div className="actions">
+                    <button className="btn-primary" onClick={() => setIsModalOpen(true)}>+ New Note</button>
+                </div>
+                <div className="topics-section">
+                    <h3>Topics</h3>
+                    <ul id="topics-list">
+                        <li className={activeTopicId === null ? 'active' : ''} 
+                            onClick={() => setActiveTopicId(null)}>
+                            Todas as Notas
+                        </li>
+                        {topics.map(topic => (
+                            <li key={topic._id} 
+                                className={activeTopicId === topic._id ? 'active' : ''}
+                                onClick={() => setActiveTopicId(topic._id)}>
+                                {topic.name}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </aside>
+
+            {/* MAIN CONTENT */}
+            <main id="main-content">
+                <header>
+                    <h2 id="current-topic-title">{activeTopicName}</h2>
+                    <div className="search-box">
+                        <input 
+                            type="text" 
+                            placeholder="Search notes..." 
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </div>
+                </header>
+
+                <div id="notes-grid">
+                    {filteredNotes.map(note => (
+                        <Note key={note._id} note={note} />
+                    ))}
+                </div>
+            </main>
+
+            {/* MODAL */}
+            {isModalOpen && (
+                <div id="modal-overlay">
+                    <div id="modal-content">
+                        <h2>Nova Nota</h2>
+                        <label>Título</label>
+                        <input type="text" value={newNoteTitle} onChange={e => setNewNoteTitle(e.target.value)} />
+                        
+                        <label>Tópico</label>
+                        <select value={newNoteTopic} onChange={e => setNewNoteTopic(e.target.value)}>
+                            <option value="">Sem Tópico</option>
+                            {topics.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+                        </select>
+
+                        <label>Cor</label>
+                        <div className="color-picker">
+                            {['yellow', 'blue', 'green', 'red'].map(color => (
+                                <button 
+                                    key={color}
+                                    className={`color-btn bg-${color} ${newNoteColor === color ? 'selected' : ''}`}
+                                    onClick={() => setNewNoteColor(color)}
+                                ></button>
+                            ))}
+                        </div>
+
+                        <label>Conteúdo</label>
+                        <textarea value={newNoteContent} onChange={e => setNewNoteContent(e.target.value)}></textarea>
+
+                        <div className="modal-actions">
+                            <button id="btn-cancel" onClick={() => setIsModalOpen(false)}>Cancelar</button>
+                            <button id="btn-save" className="btn-primary" onClick={handleSaveNote}>Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// Renderizar a App
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
