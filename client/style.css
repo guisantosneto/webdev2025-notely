@@ -6,8 +6,7 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f4f4f4;
+    font-family: 'Plus Jakarta Sans', sans-serif;    background-color: #f4f4f4;
     height: 100vh;
     overflow: hidden;
 }
@@ -35,6 +34,7 @@ body {
 }
 
 .btn-primary {
+    font-family: 'Plus Jakarta Sans', sans-serif;    background-color: #f4f4f4;
     width: 100%;
     padding: 10px;
     background-color: #333;
@@ -101,22 +101,33 @@ header {
 }
 
 #notes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
+    position: relative; /* Essencial para que os filhos absolutos fiquem aqui dentro */
+    width: 100%;
+    height: 100%;
+    overflow: hidden; /* Evita barras de scroll indesejadas */
+    background-image: radial-gradient(#ccc 1px, transparent 1px); /* Opcional: Efeito de pontinhos */
+    background-size: 20px 20px;
 }
 
 /* --- Estilo dos Cartões de Notas --- */
 .note-card {
-    background-color: #fff;
+    position: absolute; /* Permite definir left(x) e top(y) */
+    width: 220px;
+    height: 220px; /* Altura fixa é melhor para drag & drop */
     padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    min-height: 200px;
+    border-radius: 2px; /* Cantos menos redondos parecem mais post-its */
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.2);
     display: flex;
     flex-direction: column;
-    transition: transform 0.2s;
-    position: relative;
+    cursor: grab; /* Mãozinha para indicar que dá para agarrar */
+    user-select: none; /* Impede selecionar texto enquanto arrasta */
+    transition: box-shadow 0.2s; /* Removemos a transição de transform para o arrasto ser instantâneo */
+}
+
+.note-card:active {
+    cursor: grabbing;
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+    z-index: 1000; /* Traz a nota para a frente quando clicada */
 }
 
 .note-card:hover {
@@ -262,4 +273,54 @@ header {
 
 #root {
     height: 100%;
+}
+
+.btn-secondary {
+    font-family: 'Plus Jakarta Sans', sans-serif;    background-color: #f4f4f4;
+    width: 100%;
+    padding: 10px;
+    background-color: #e0e0e0; /* Cor mais clara */
+    color: #333;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-bottom: 30px;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: #ccc;
+}
+
+/* Ajuste opcional para o modal de tópicos (se quiser menor) */
+#modal-content.small-modal {
+    width: 300px; /* Mais estreito */
+}
+
+/* Botão de Apagar (X) no topo direito */
+.note-card .delete-btn {
+    position: absolute;    /* Permite fixar numa posição exata dentro da nota */
+    top: 8px;              /* 8px do topo */
+    right: 8px;            /* 8px da direita */
+    
+    background: transparent; /* Fundo transparente */
+    border: none;            /* Sem borda */
+    font-size: 20px;         /* Tamanho do X */
+    font-weight: bold;
+    color: #444;             /* Cor cinza escuro */
+    cursor: pointer;
+    
+    width: 30px;             /* Área de clique */
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;      /* Redondo para o efeito hover */
+    transition: background-color 0.2s;
+}
+
+.note-card .delete-btn:hover {
+    background-color: rgba(0, 0, 0, 0.1); /* Círculo escuro suave ao passar o rato */
+    color: #000;
 }
