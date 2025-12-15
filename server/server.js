@@ -1,4 +1,3 @@
-// server/server.js COMPLETO
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -16,8 +15,7 @@ async function startServer() {
         await client.connect();
         db = client.db(DB_NAME);
         console.log(`✅ Conectado ao MongoDB: ${DB_NAME}`);
-        
-        // Inicia servidor
+
         const server = http.createServer(handleRequest);
         server.listen(PORT, () => {
             console.log(`🚀 Servidor a correr em http://localhost:${PORT}`);
@@ -27,65 +25,76 @@ async function startServer() {
     }
 }
 
-// Função auxiliar para ler o corpo do pedido (JSON)
-function getRequestBody(req) {
+// Ler corpo do pedido
+function getRequestBody(request) {
     return new Promise((resolve, reject) => {
         let body = '';
-        req.on('data', chunk => body += chunk.toString());
-        req.on('end', () => resolve(body));
-        req.on('error', err => reject(err));
+        request.on('data', chunk => body += chunk.toString());
+        request.on('end', () => resolve(body));
+        request.on('error', err => reject(err));
     });
 }
 
-async function handleRequest(req, res) {
-    // CORS e Headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+async function handleRequest(request, response) {
+    // CORS
+    response.setHeader('Access-Control-Allow-Origin', '*');
+    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+    if (request.method === 'OPTIONS') {
+        response.writeHead(204);
+        response.end();
+        return;
+    }
 
     // --- API: NOTAS ---
-    if (req.url === '/api/notes' && req.method === 'GET') {
+    if (request.url === '/api/notes' && request.method === 'GET') {
         const notes = await db.collection('notes').find().toArray();
-        res.writeHead(200, {'Content-Type': 'application/json'});
-        res.end(JSON.stringify(notes));
+        response.writeHead(200, { 'Content-Type': 'application/json' });
+        response.end(JSON.stringify(notes));
         return;
     }
 
-    if (req.url === '/api/notes' && req.method === 'POST') {
+    if (request.url === '/api/notes' && request.method === 'POST') {
         try {
-            const body = await getRequestBody(req);
+            const body = await getRequestBody(request);
             const data = JSON.parse(body);
+
             const newNote = { ...data, createdAt: new Date() };
             const result = await db.collection('notes').insertOne(newNote);
-            res.writeHead(201, {'Content-Type': 'application/json'});
-            res.end(JSON.stringify({ ...newNote, _id: result.insertedId }));
-        } catch(e) { res.writeHead(500); res.end(JSON.stringify({error: e.message})); }
+
+            response.writeHead(201, { 'Content-Type': 'application/json' });
+            response.end(JSON.stringify({ ...newNote, _id: result.insertedId }));
+        } catch (e) {
+            response.writeHead(500);
+            response.end(JSON.stringify({ error: e.message }));
+        }
         return;
     }
 
-    if (req.url.startsWith('/api/notes') && req.method === 'DELETE') {
-        const id = new URL(req.url, `http://${req.headers.host}`).searchParams.get('id');
+    if (request.url.startsWith('/api/notes') && request.method === 'DELETE') {
+        const id = new URL(request.url, `http://${request.headers.host}`)
+            .searchParams.get('id');
+
         await db.collection('notes').deleteOne({ _id: new ObjectId(id) });
-        res.writeHead(200, {'Content-Type': 'application/json'});
-        res.end(JSON.stringify({success: true}));
+
+        response.writeHead(200, { 'Content-Type': 'application/json' });
+        response.end(JSON.stringify({ success: true }));
         return;
     }
 
-    // --- ROTA PUT: Atualizar Nota (Posição, Cor, Texto, etc) ---
+    // --- PUT: Atualizar Nota ---
     if (request.url.startsWith('/api/notes') && request.method === 'PUT') {
         try {
-            const urlParts = new URL(request.url, `http://${request.headers.host}`);
-            const id = urlParts.searchParams.get('id');
+            const url = new URL(request.url, `http://${request.headers.host}`);
+            const id = url.searchParams.get('id');
 
             const body = await getRequestBody(request);
             const updates = JSON.parse(body);
 
-            // Remove o _id do corpo para não tentar atualizar a chave primária (dá erro no Mongo)
-            delete updates._id; 
+            delete updates._id;
 
-            const result = await db.collection('notes').updateOne(
+            await db.collection('notes').updateOne(
                 { _id: new ObjectId(id) },
                 { $set: updates }
             );
@@ -94,57 +103,64 @@ async function handleRequest(req, res) {
             response.end(JSON.stringify({ success: true }));
         } catch (err) {
             console.error(err);
-            response.writeHead(500); 
+            response.writeHead(500);
             response.end(JSON.stringify({ error: err.message }));
         }
         return;
     }
 
-    // --- API: TÓPICOS (A PARTE QUE FALTAVA) ---
-    if (req.url === '/api/topics' && req.method === 'GET') {
+    // --- API: TÓPICOS ---
+    if (request.url === '/api/topics' && request.method === 'GET') {
         const topics = await db.collection('topics').find().toArray();
-        res.writeHead(200, {'Content-Type': 'application/json'});
-        res.end(JSON.stringify(topics));
+        response.writeHead(200, { 'Content-Type': 'application/json' });
+        response.end(JSON.stringify(topics));
         return;
     }
 
-    if (req.url === '/api/topics' && req.method === 'POST') {
+    if (request.url === '/api/topics' && request.method === 'POST') {
         try {
-            const body = await getRequestBody(req);
+            const body = await getRequestBody(request);
             const data = JSON.parse(body);
-            if (!data.name) throw new Error("Nome obrigatório");
+
+            if (!data.name) throw new Error('Nome obrigatório');
 
             const newTopic = { name: data.name, createdAt: new Date() };
             const result = await db.collection('topics').insertOne(newTopic);
-            
-            res.writeHead(201, {'Content-Type': 'application/json'});
-            res.end(JSON.stringify({ ...newTopic, _id: result.insertedId }));
-        } catch(e) { 
-            console.error(e); // Log no terminal para debug
-            res.writeHead(500); res.end(JSON.stringify({error: e.message})); 
+
+            response.writeHead(201, { 'Content-Type': 'application/json' });
+            response.end(JSON.stringify({ ...newTopic, _id: result.insertedId }));
+        } catch (e) {
+            response.writeHead(500);
+            response.end(JSON.stringify({ error: e.message }));
         }
         return;
     }
 
     // --- ESTÁTICOS ---
     const clientPath = path.join(__dirname, '..', 'client');
-    const safeUrl = req.url.startsWith('/') ? req.url.slice(1) : req.url;
+    const safeUrl = request.url.startsWith('/') ? request.url.slice(1) : request.url;
 
-    if (req.url === '/' || req.url === '/index.html') {
-        serveFile(path.join(clientPath, 'index.html'), 'text/html', res);
-    } else if (req.url.endsWith('.css')) {
-        serveFile(path.join(clientPath, safeUrl), 'text/css', res);
-    } else if (req.url.endsWith('.js')) {
-        serveFile(path.join(clientPath, safeUrl), 'application/javascript', res);
+    if (request.url === '/' || request.url === '/index.html') {
+        serveFile(path.join(clientPath, 'index.html'), 'text/html', response);
+    } else if (request.url.endsWith('.css')) {
+        serveFile(path.join(clientPath, safeUrl), 'text/css', response);
+    } else if (request.url.endsWith('.js')) {
+        serveFile(path.join(clientPath, safeUrl), 'application/javascript', response);
     } else {
-        res.writeHead(404); res.end('Not Found');
+        response.writeHead(404);
+        response.end('Not Found');
     }
 }
 
-function serveFile(filePath, type, res) {
+function serveFile(filePath, type, response) {
     fs.readFile(filePath, (err, content) => {
-        if(err) { res.writeHead(404); res.end('File not found'); }
-        else { res.writeHead(200, {'Content-Type': type}); res.end(content); }
+        if (err) {
+            response.writeHead(404);
+            response.end('File not found');
+        } else {
+            response.writeHead(200, { 'Content-Type': type });
+            response.end(content);
+        }
     });
 }
 
