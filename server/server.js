@@ -137,7 +137,7 @@ async function handleRequest(request, response) {
     }
 
     // --- ESTÁTICOS ---
-    const clientPath = path.join(__dirname, '..', 'client');
+    const clientPath = path.join(__dirname, 'client');
     const safeUrl = request.url.startsWith('/') ? request.url.slice(1) : request.url;
 
     if (request.url === '/' || request.url === '/index.html') {

@@ -1,3 +1,5 @@
+require('./server.js');
+
 const { app, BrowserWindow } = require('electron');
 
 function createWindow() {
@@ -9,8 +11,19 @@ function createWindow() {
         }
     });
 
-    // Carrega a sua aplicação que está a correr na porta 3000
     win.loadURL('http://localhost:3000');
 }
 
 app.whenReady().then(createWindow);
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow()
+  }
+})
