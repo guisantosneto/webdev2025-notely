@@ -1,4 +1,3 @@
-/* --- Resets Básicos --- */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -6,80 +5,206 @@
 }
 
 body {
-    font-family: 'Plus Jakarta Sans', sans-serif;    background-color: #f4f4f4;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: #f4f4f4;
     height: 100vh;
     overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
-/* --- Layout Geral --- */
 #app-container {
     display: flex;
     height: 100%;
 }
 
-/* --- Barra Lateral (Sidebar) --- */
 #sidebar {
-    width: 260px;
+    width: 280px;
     background-color: #ffffff;
-    border-right: 1px solid #e0e0e0;
-    padding: 20px;
+    border-right: 3px solid #000;
+    /* Alteração para permitir empurrar o perfil para o fundo */
     display: flex;
-    flex-direction: column;
+    flex-direction: column; 
+    padding: 0; /* Removemos padding global para controlar melhor */
+    z-index: 20;
+}
+
+/* Wrapper para o conteúdo do topo ocupar o espaço disponível */
+.sidebar-content {
+    padding: 30px 20px;
+    flex-grow: 1; /* Isto empurra o perfil para baixo */
+    overflow-y: auto; /* Se houver muitos tópicos, faz scroll só aqui */
+}
+
+.brand {
+    margin-bottom: 30px;
+    /* Removemos a borda da brand antiga */
 }
 
 .brand h1 {
-    font-size: 24px;
-    margin-bottom: 30px;
-    color: #333;
+    font-size: 32px;
+    font-weight: 900;
+    color: #000;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    margin: 0;
 }
 
-.btn-primary {
-    font-family: 'Plus Jakarta Sans', sans-serif;    background-color: #f4f4f4;
-    width: 100%;
-    padding: 10px;
-    background-color: #333;
-    color: white;
+/* --- Secção de Perfil (NOVO) --- */
+.user-profile {
+    border-top: 3px solid #000; /* Linha a separar do resto */
+    padding: 20px;
+    background-color: #f4f4f4; /* Ligeiro destaque */
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* O Ícone de Perfil (Círculo Neo-Brutalista) */
+.avatar {
+    width: 45px;
+    height: 45px;
+    background-color: #000;
+    color: #fff;
+    border: 2px solid #000;
+    border-radius: 50%; /* Círculo perfeito */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    font-weight: 800;
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Previne email longo quebrar layout */
+}
+
+.email-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+}
+
+.logout-link {
+    background: transparent;
     border: none;
-    border-radius: 5px;
+    color: #555;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    padding: 0;
+    margin-top: 2px;
+    text-transform: uppercase;
+    text-decoration: underline;
+}
+
+
+.btn-primary {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    width: 100%;
+    padding: 12px;
+    background-color: #222;
+    color: white;
+    border: 3px solid #000;
+    border-radius: 0;
     cursor: pointer;
     font-size: 16px;
-    margin-bottom: 30px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+    box-shadow: 4px 4px 0px #000;
+    transition: all 0.1s;
 }
 
 .btn-primary:hover {
-    background-color: #555;
+    background-color: #000;
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #000;
+}
+
+.btn-primary:active {
+    transform: translate(4px, 4px);
+    box-shadow: none;
+}
+
+.btn-secondary {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    width: 100%;
+    padding: 12px;
+    background-color: #fff;
+    color: #000;
+    border: 3px solid #000;
+    border-radius: 0;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 30px;
+    box-shadow: 4px 4px 0px #000;
+    transition: all 0.1s;
+}
+
+.btn-secondary:hover {
+    background-color: #f0f0f0;
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #000;
+}
+
+.btn-secondary:active {
+    transform: translate(4px, 4px);
+    box-shadow: none;
 }
 
 .topics-section h3 {
     font-size: 14px;
-    color: #888;
+    color: #000;
+    font-weight: 900;
     text-transform: uppercase;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
+    letter-spacing: 1px;
 }
 
 #topics-list {
     list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 #topics-list li {
-    padding: 10px;
+    padding: 10px 15px;
     cursor: pointer;
-    border-radius: 5px;
-    color: #555;
-    margin-bottom: 5px;
+    border: 2px solid transparent;
+    border-radius: 0;
+    color: #000;
+    font-weight: 600;
+    transition: all 0.1s;
+    position: relative;
 }
 
 #topics-list li:hover {
-    background-color: #f0f0f0;
+    border: 2px solid #000;
+    background-color: #fff;
+    box-shadow: 3px 3px 0px #000;
+    transform: translate(-2px, -2px);
 }
 
 #topics-list li.active {
-    background-color: #e8f0fe;
-    color: #1a73e8;
-    font-weight: bold;
+    background-color: #000;
+    color: #fff;
+    border: 2px solid #000;
+    font-weight: 800;
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
 }
 
-/* --- Conteúdo Principal (Main) --- */
 #main-content {
     flex-grow: 1;
     padding: 40px;
@@ -94,86 +219,132 @@ header {
 }
 
 .search-box input {
-    padding: 10px;
-    border-radius: 20px;
-    border: 1px solid #ccc;
-    width: 200px;
+    padding: 12px 20px;
+    border-radius: 0;
+    border: 3px solid #000;
+    width: 250px;
+    font-family: inherit;
+    font-weight: 600;
+    background-color: #fff;
+    box-shadow: 4px 4px 0px #000;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.search-box input:focus {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #000;
 }
 
 #notes-grid {
-    position: relative; /* Essencial para que os filhos absolutos fiquem aqui dentro */
+    position: relative;
     width: 100%;
     height: 100%;
-    overflow: hidden; /* Evita barras de scroll indesejadas */
-    background-image: radial-gradient(#ccc 1px, transparent 1px); /* Opcional: Efeito de pontinhos */
-    background-size: 20px 20px;
+    overflow: hidden;
+    background-image: radial-gradient(#aaa 1px, transparent 1px);
+    background-size: 25px 25px;
 }
 
-/* --- Estilo dos Cartões de Notas --- */
 .note-card {
-    position: absolute; /* Permite definir left(x) e top(y) */
-    width: 220px;
-    height: 220px; /* Altura fixa é melhor para drag & drop */
-    padding: 20px;
-    border-radius: 2px; /* Cantos menos redondos parecem mais post-its */
-    box-shadow: 3px 3px 10px rgba(0,0,0,0.2);
+    position: absolute;
+    width: 240px;
+    height: 280px;
+    border: 3px solid #000;
+    border-radius: 0;
+    box-shadow: 6px 6px 0px #000;
     display: flex;
     flex-direction: column;
-    cursor: grab; /* Mãozinha para indicar que dá para agarrar */
-    user-select: none; /* Impede selecionar texto enquanto arrasta */
-    transition: box-shadow 0.2s; /* Removemos a transição de transform para o arrasto ser instantâneo */
+    cursor: grab;
+    user-select: none;
+    transition: transform 0.1s, box-shadow 0.1s;
 }
 
 .note-card:active {
     cursor: grabbing;
-    box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
-    z-index: 1000; /* Traz a nota para a frente quando clicada */
+    transform: translate(3px, 3px);
+    box-shadow: 3px 3px 0px #000;
+    z-index: 1000;
 }
 
 .note-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10;
 }
 
 .note-card h3 {
-    font-size: 18px;
-    margin-bottom: 10px;
-    color: #333;
+    font-size: 20px;
+    font-weight: 800;
+    color: #000;
+    border-bottom: 3px solid #000;
+    margin: 0;
+    padding: 12px 50px 12px 15px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background-color: rgba(255,255,255,0.2);
+}
+
+.note-card .delete-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 50px;
+    height: 50px;
+    background: transparent;
+    border: none;
+    border-left: 3px solid #000;
+    font-size: 28px;
+    color: #000;
+    cursor: pointer;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s;
+    z-index: 5;
+    line-height: 1;
+}
+
+.note-card .delete-btn:hover {
+    background-color: #000;
+    color: #fff;
 }
 
 .note-card p {
-    font-size: 14px;
-    color: #666;
+    padding: 15px;
+    font-size: 15px;
+    color: #000;
+    font-weight: 600;
     line-height: 1.5;
     flex-grow: 1;
-    white-space: pre-wrap; /* Mantém os parágrafos do texto */
+    white-space: pre-wrap;
+    overflow-y: auto;
+}
+
+.note-card p::-webkit-scrollbar { 
+    width: 4px; 
+}
+
+.note-card p::-webkit-scrollbar-thumb { 
+    background-color: #000; 
 }
 
 .note-card .date {
-    font-size: 11px;
-    color: #999;
-    margin-top: 10px;
+    padding: 0 15px 10px 15px;
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(0,0,0,0.5);
     text-align: right;
+    margin-top: 0;
 }
 
-/* --- Cores das Notas --- */
-.bg-yellow {
-    background-color: #fff7d1;
-}
+.bg-yellow { background-color: #fff7d1; }
+.bg-blue { background-color: #d1eaff; }
+.bg-green { background-color: #d1ffdb; }
+.bg-red { background-color: #ffd1d1; }
 
-.bg-blue {
-    background-color: #d1eaff;
-}
-
-.bg-green {
-    background-color: #d1ffdb;
-}
-
-.bg-red {
-    background-color: #ffd1d1;
-}
-
-/* --- MODAL (Janela de Criar Nota) --- */
 .hidden {
     display: none !important;
 }
@@ -195,9 +366,10 @@ header {
 #modal-content {
     background: white;
     padding: 30px;
-    border-radius: 12px;
+    border: 3px solid #000;
+    border-radius: 0;
     width: 400px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    box-shadow: 10px 10px 0px #000;
     display: flex;
     flex-direction: column;
     gap: 15px;
@@ -205,24 +377,29 @@ header {
 
 #modal-content h2 {
     margin-top: 0;
-    color: #333;
+    color: #000;
+    font-weight: 900;
+    text-transform: uppercase;
 }
 
 #modal-content label {
     font-size: 12px;
-    font-weight: bold;
-    color: #666;
+    font-weight: 800;
+    color: #000;
     margin-bottom: -10px;
+    text-transform: uppercase;
 }
 
 #modal-content input,
 #modal-content select,
 #modal-content textarea {
     padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+    border: 2px solid #000;
+    border-radius: 0;
     width: 100%;
     font-family: inherit;
+    font-weight: 600;
+    background: #f4f4f4;
 }
 
 #modal-content textarea {
@@ -230,7 +407,6 @@ header {
     resize: none;
 }
 
-/* Seletor de Cores no Modal */
 .color-picker {
     display: flex;
     gap: 10px;
@@ -239,31 +415,43 @@ header {
 .color-btn {
     width: 30px;
     height: 30px;
-    border-radius: 50%;
-    border: 2px solid transparent;
+    border-radius: 0;
+    border: 2px solid #000;
     cursor: pointer;
+    box-shadow: 2px 2px 0px #000;
 }
 
 .color-btn.selected {
-    border-color: #333;
-    transform: scale(1.1);
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    border-color: #000;
+    transform: translate(2px, 2px);
+    box-shadow: none;
+    outline: 2px solid #000;
+    outline-offset: 2px;
 }
 
-/* Botões do Modal */
 .modal-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 15px;
     margin-top: 10px;
 }
 
 #btn-cancel {
     background: transparent;
-    border: 1px solid #ccc;
-    padding: 8px 15px;
-    border-radius: 5px;
+    border: 2px solid #000;
+    padding: 8px 20px;
+    border-radius: 0;
     cursor: pointer;
+    font-weight: 800;
+    text-transform: uppercase;
+    box-shadow: 3px 3px 0px #000;
+}
+
+#btn-cancel:hover {
+    background: #000;
+    color: white;
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px #000;
 }
 
 #btn-save {
@@ -275,52 +463,91 @@ header {
     height: 100%;
 }
 
-.btn-secondary {
-    font-family: 'Plus Jakarta Sans', sans-serif;    background-color: #f4f4f4;
-    width: 100%;
-    padding: 10px;
-    background-color: #e0e0e0; /* Cor mais clara */
-    color: #333;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-bottom: 30px;
-    transition: background-color 0.2s;
-}
-
-.btn-secondary:hover {
-    background-color: #ccc;
-}
-
-/* Ajuste opcional para o modal de tópicos (se quiser menor) */
 #modal-content.small-modal {
-    width: 300px; /* Mais estreito */
+    width: 320px;
 }
 
-/* Botão de Apagar (X) no topo direito */
-.note-card .delete-btn {
-    position: absolute;    /* Permite fixar numa posição exata dentro da nota */
-    top: 8px;              /* 8px do topo */
-    right: 8px;            /* 8px da direita */
-    
-    background: transparent; /* Fundo transparente */
-    border: none;            /* Sem borda */
-    font-size: 20px;         /* Tamanho do X */
-    font-weight: bold;
-    color: #444;             /* Cor cinza escuro */
-    cursor: pointer;
-    
-    width: 30px;             /* Área de clique */
-    height: 30px;
+#login-container {
     display: flex;
-    align-items: center;
     justify-content: center;
-    border-radius: 50%;      /* Redondo para o efeito hover */
-    transition: background-color 0.2s;
+    align-items: center;
+    height: 100vh;
+    flex-direction: column;
+    background-color: #e0e0e0;
+    background-image: radial-gradient(#000 1px, transparent 1px);
+    background-size: 30px 30px;
 }
 
-.note-card .delete-btn:hover {
-    background-color: rgba(0, 0, 0, 0.1); /* Círculo escuro suave ao passar o rato */
-    color: #000;
+.login-card {
+    background: white;
+    width: 100%;
+    max-width: 420px;
+    padding: 50px 40px;
+    border: 3px solid #000;
+    box-shadow: 10px 10px 0px #000;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.login-card h3 {
+    font-size: 36px;
+    text-align: center;
+    margin-bottom: 35px;
+    border: none;
+    padding: 0;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+}
+
+.error-msg {
+    color: white;
+    background-color: #ff4444;
+    border: 2px solid #000;
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 20px;
+    box-shadow: 3px 3px 0px #000;
+}
+
+.login-card input {
+    width: 100%;
+    padding: 15px 20px;
+    margin-bottom: 25px;
+    border: 2px solid #000;
+    border-radius: 0;
+    background-color: #f8f8f8;
+    font-size: 16px;
+    font-weight: 600;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.login-card input:focus {
+    background-color: #fff;
+    transform: translate(-3px, -3px);
+    box-shadow: 5px 5px 0px #000;
+}
+
+.toggle-link {
+    margin-top: 30px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 700;
+    text-decoration: underline;
+    text-transform: uppercase;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+.toggle-link:hover {
+    background-color: #000;
+    color: white;
+    display: inline-block;
+    padding: 5px 10px;
+    text-decoration: none;
+    margin: 25px auto 0 auto;
 }

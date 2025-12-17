@@ -1,6 +1,6 @@
 {
   "name": "notely-app",
-  "productName":"Notely",
+  "productName": "Notely",
   "version": "1.0.0",
   "description": "App do Projeto WebDev",
   "main": "main.js",
