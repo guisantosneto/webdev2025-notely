@@ -215,6 +215,17 @@ function App() {
         setIsTopicModalOpen(false); setNewTopicName(""); carregarDados();
     };
 
+    const handleDeleteTopic = async (id, name) => {
+        if (!confirm(`Tens a certeza que queres apagar o tópico "${name}"? As notas vão passar para a lista geral.`)) return;
+
+        await authFetch(`/api/topics?id=${id}`, { method: 'DELETE' });
+        
+        // Se estivéssemos a ver o tópico que foi apagado, volta para "Todas"
+        if (activeTopicId === id) setActiveTopicId(null);
+        
+        carregarDados();
+    };
+
     const filteredNotes = notes.filter(n => {
         return (activeTopicId === null || n.topicId === activeTopicId) &&
                (n.title.toLowerCase().includes(search.toLowerCase()) || n.content.toLowerCase().includes(search.toLowerCase()));
@@ -236,11 +247,24 @@ function App() {
                     <div className="topics-section">
                         <h3>Topics</h3>
                         <ul id="topics-list">
-                            <li className={activeTopicId === null ? 'active' : ''} onClick={() => setActiveTopicId(null)}>Todas as Notas</li>
+                            <li className={activeTopicId === null ? 'active' : ''} onClick={() => setActiveTopicId(null)}>
+                            Todas as Notas
+                        </li>
                             {topics.map(t => (
-                                <li key={t._id} className={activeTopicId === t._id ? 'active' : ''} onClick={() => setActiveTopicId(t._id)}>{t.name}</li>
-                            ))}
-                        </ul>
+                            <li key={t._id} className={activeTopicId === t._id ? 'active' : ''} onClick={() => setActiveTopicId(t._id)}>
+                                <span>{t.name}</span>
+                                <button 
+                                    className="delete-topic-btn" 
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Impede que o clique ative o tópico ao mesmo tempo que apaga
+                                         handleDeleteTopic(t._id, t.name);
+                                    }}
+                >
+                    &times;
+                </button>
+            </li>
+        ))}
+    </ul>
                     </div>
                 </div>
 
@@ -299,7 +323,21 @@ function App() {
                 <div id="modal-overlay">
                     <div id="modal-content" className="small-modal"> 
                         <h2>Novo Tópico</h2>
-                        <input type="text" placeholder="Nome" value={newTopicName} onChange={e => setNewTopicName(e.target.value)} />
+                        
+                        {/* Input com limite de 20 caracteres */}
+                        <input 
+                            type="text" 
+                            placeholder="Nome do Tópico" 
+                            maxLength={20}
+                            value={newTopicName} 
+                            onChange={e => setNewTopicName(e.target.value)} 
+                        />
+                        
+                        {/* Contador de caracteres (Estilo Pequeno e Negrito) */}
+                        <div style={{ textAlign: 'right', fontSize: '12px', fontWeight: '800', marginTop: '5px' }}>
+                            {newTopicName.length}/20
+                        </div>
+
                         <div className="modal-actions">
                             <button id="btn-cancel" onClick={() => setIsTopicModalOpen(false)}>Cancelar</button>
                             <button id="btn-save" className="btn-primary" onClick={handleSaveTopic}>Criar</button>

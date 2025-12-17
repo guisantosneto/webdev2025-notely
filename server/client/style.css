@@ -171,14 +171,7 @@ body {
     margin-bottom: 15px;
     letter-spacing: 1px;
 }
-
-#topics-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
+/* Atualização da Lista de Tópicos */
 #topics-list li {
     padding: 10px 15px;
     cursor: pointer;
@@ -188,6 +181,12 @@ body {
     font-weight: 600;
     transition: all 0.1s;
     position: relative;
+    margin-bottom: 15px;
+    
+    /* Layout Flex para separar nome do botão X */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 #topics-list li:hover {
@@ -203,6 +202,47 @@ body {
     border: 2px solid #000;
     font-weight: 800;
     box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+}
+
+/* O Botão de Apagar Tópico */
+.delete-topic-btn {
+    background: transparent;
+    border: none;
+    color: #000;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 5px;
+    opacity: 0; /* Escondido por defeito */
+    transition: opacity 0.2s;
+}
+
+/* Mostra o botão apenas quando passamos o rato por cima do tópico */
+#topics-list li:hover .delete-topic-btn {
+    opacity: 1;
+}
+
+/* Ajuste de cor quando o tópico está ativo (fundo preto) */
+#topics-list li.active .delete-topic-btn {
+    color: #fff;
+}
+
+#topics-list li.active .delete-topic-btn:hover {
+    color: #ff4444; /* Vermelho ao passar o rato para apagar */
+}
+
+#topics-list li span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 190px; 
+    display: block;
+}
+
+
+.delete-topic-btn {
+    flex-shrink: 0;
+    margin-left: 10px;
 }
 
 #main-content {
