@@ -4,9 +4,9 @@ const path = require('path');
 const crypto = require('crypto');
 const { MongoClient, ObjectId } = require('mongodb');
 
-const PORT = 3000;
-const DB_URI = 'mongodb://localhost:27017';
-const DB_NAME = 'notely_db';
+const PORT = process.env.PORT || 3000;
+const MONGO_URL = process.env.MONGO_URL || 'mongodb://127.0.0.1:27017';
+const DB_URI = MONGO_URL;
 
 let db;
 
