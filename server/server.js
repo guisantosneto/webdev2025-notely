@@ -93,11 +93,22 @@ async function handleRequest(request, response) {
                 password: hashPassword(password),
                 createdAt: new Date()
             };
-            await db.collection('users').insertOne(newUser);
+            
+            // 1. Cria o utilizador
+            const result = await db.collection('users').insertOne(newUser);
+            const newUserId = result.insertedId; // Guarda o ID do novo user
+
+            // 2. Cria AUTOMATICAMENTE o "Topic #1" para este user
+            await db.collection('topics').insertOne({
+                name: "Topic #1",
+                userId: newUserId,
+                createdAt: new Date()
+            });
             
             response.writeHead(201, { 'Content-Type': 'application/json' });
             response.end(JSON.stringify({ success: true }));
         } catch (e) {
+            console.error(e); // Ajuda a ver erros no terminal
             response.writeHead(500);
             response.end(JSON.stringify({ error: e.message }));
         }
@@ -183,6 +194,34 @@ async function handleRequest(request, response) {
                 { _id: new ObjectId(id), userId: user._id },
                 { $set: updates }
             );
+            response.writeHead(200, { 'Content-Type': 'application/json' });
+            response.end(JSON.stringify({ success: true }));
+            return;
+        }
+
+        // [NOVO] PUT TOPIC (Editar Nome)
+        if (pathname === '/api/topics' && request.method === 'PUT') {
+            const id = urlParts.searchParams.get('id');
+            const body = await getRequestBody(request);
+            const data = JSON.parse(body);
+
+            if (!data.name) {
+                response.writeHead(400); 
+                response.end(JSON.stringify({ error: "Nome obrigatório" }));
+                return;
+            }
+
+            if (data.name.length > 20) {
+                response.writeHead(400);
+                response.end(JSON.stringify({ error: "Máximo 20 caracteres." }));
+                return;
+            }
+
+            await db.collection('topics').updateOne(
+                { _id: new ObjectId(id), userId: user._id },
+                { $set: { name: data.name } }
+            );
+            
             response.writeHead(200, { 'Content-Type': 'application/json' });
             response.end(JSON.stringify({ success: true }));
             return;
