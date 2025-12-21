@@ -36,7 +36,7 @@ function LoginScreen({ onLogin }) {
     return (
         <div id="login-container">
             <div className="login-card">
-                <h3>{isRegistering ? 'Criar Conta' : 'Login'}</h3>
+                <h3>{isRegistering ? 'Create Account' : 'Login'}</h3>
                 {error && <p className="error-msg">{error}</p>}
                 <form onSubmit={handleSubmit}>
                     <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
