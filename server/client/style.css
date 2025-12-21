@@ -294,6 +294,8 @@ header {
     box-shadow: 6px 6px 0px #000;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
     cursor: grab;
     user-select: none;
     transition: transform 0.1s, box-shadow 0.1s;
@@ -324,6 +326,7 @@ header {
     overflow: hidden;
     text-overflow: ellipsis;
     background-color: rgba(255,255,255,0.2);
+    flex-shrink: 0;
 }
 
 .note-card .delete-btn {
@@ -361,6 +364,9 @@ header {
     flex-grow: 1;
     white-space: pre-wrap;
     overflow-y: auto;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    overflow-x: hidden;
 }
 
 .note-card p::-webkit-scrollbar { 
@@ -378,6 +384,7 @@ header {
     color: rgba(0,0,0,0.5);
     text-align: right;
     margin-top: 0;
+    flex-shrink: 0;
 }
 
 .bg-yellow { background-color: #fff7d1; }
