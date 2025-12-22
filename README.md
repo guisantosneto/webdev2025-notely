@@ -7,7 +7,7 @@
 
 ## ⚠️ AVISO IMPORTANTE: REDE DO DEI ⚠️
 
-Para executar esta aplicação, é **OBRIGATÓRIO** estar ligado à rede do **DEI (Departamento de Engenharia Informática)** ou via **VPN da Universidade de Coimbra**.
+Para executar esta aplicação, é **OBRIGATÓRIO** estar ligado à rede do **DEI (Departamento de Engenharia Informática)** ou via **VPN do DEI**.
 
 O ficheiro `main.js` do Electron e o servidor estão configurados para comunicar através do endereço IP fixo:
 
@@ -69,6 +69,8 @@ npm install
 
 ## 3. Iniciar o Servidor (Backend & Web App)
 
+Se estiver ligado a rede do DEI, basta pesquisar no browser: **http://10.17.0.29:3000/**. Caso nao esteja:
+
 O servidor Node.js é central para o funcionamento da app e deve ser sempre **o primeiro a ser iniciado**.
 
 1.  Abra o terminal na pasta `server/`.
@@ -77,7 +79,7 @@ O servidor Node.js é central para o funcionamento da app e deve ser sempre **o 
     node server.js
     ```
 3.  O servidor ficará ativo. Pode testar o acesso via Web no endereço:
-    👉 **http://10.17.0.29:3000/**
+    👉 **http://localhost:3000/**
 
 ---
 
@@ -88,11 +90,11 @@ Para utilizar a versão desktop nativa, deve utilizar o executável fornecido.
 **Passos para instalação:**
 
 1.  **Download do Executável:**
-    Descarregue o ficheiro de instalação `notely.exe` através do link oficial do projeto:
+    Descarregue o ficheiro de instalação `Notely-1.0.0 Setup.exe` através do link oficial do projeto:
     👉 **[Download notely.exe (Google Drive)](https://drive.google.com/file/d/1U4uSeWWtR9px4rlIOkxcDeIrOZ1Lh_E2/view?usp=sharing)**
 
 2.  **Execução:**
-    Certifique-se de que o servidor (Passo 3) está a correr. De seguida, instale/execute o ficheiro `notely.exe`.
+    Certifique-se de que o servidor (Passo 3) está a correr. De seguida, instale/execute o ficheiro `Notely-1.0.0 Setup.exe`.
 
 3.  **Utilização:**
     A aplicação irá abrir uma janela nativa conectada automaticamente ao servidor do projeto.
