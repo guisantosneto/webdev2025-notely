@@ -9,9 +9,8 @@ function LoginScreen({ onLogin }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
-        // Simple validation
         if (!email || !password) {
-            setError("Please fill in all fields.");
+            setError("Preencha todos os campos.");
             return;
         }
 
@@ -25,12 +24,12 @@ function LoginScreen({ onLogin }) {
             });
             const data = await res.json();
 
-            if (!res.ok) throw new Error(data.error || "Unknown error");
+            if (!res.ok) throw new Error(data.error || "Erro desconhecido");
 
             if (isRegistering) {
-                alert("Account created successfully! Please log in.");
-                setIsRegistering(false); // Switch to login screen
-                setPassword(""); // Clear password for security
+                alert("Conta criada! Faça login.");
+                setIsRegistering(false);
+                setPassword("");
             } else {
                 onLogin(data.token, data.email);
             }
@@ -42,42 +41,23 @@ function LoginScreen({ onLogin }) {
     return (
         <div id="login-container">
             <div className="login-card">
-                <h3>{isRegistering ? 'Create Account' : 'Login'}</h3>
-                
+                <h3>{isRegistering ? 'Criar Conta' : 'Login'}</h3>
                 {error && <p className="error-msg">{error}</p>}
-                
                 <form onSubmit={handleSubmit}>
-                    <input 
-                        type="email" 
-                        placeholder="Your email" 
-                        value={email} 
-                        onChange={e => setEmail(e.target.value)} 
-                        required 
-                    />
-                    <input 
-                        type="password" 
-                        placeholder="Your password" 
-                        value={password} 
-                        onChange={e => setPassword(e.target.value)} 
-                        required 
-                    />
+                    <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
+                    <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required />
                     <button type="submit" className="btn-primary">
-                        {isRegistering ? 'Register' : 'Login Now'}
+                        {isRegistering ? 'Registar' : 'Entrar'}
                     </button>
                 </form>
-                
-                <p className="toggle-link" onClick={() => {
-                    setIsRegistering(!isRegistering);
-                    setError(""); // Clear errors when switching
-                }}>
-                    {isRegistering ? '← Back to Login' : 'No account? Create one →'}
+                <p className="toggle-link" onClick={() => { setIsRegistering(!isRegistering); setError(""); }}>
+                    {isRegistering ? '← Voltar ao Login' : 'Não tem conta? Crie uma →'}
                 </p>
             </div>
         </div>
     );
 }
 
-// --- NOTE COMPONENT ---
 function Note({ note, onMouseDown, onDelete }) {
     const dateStr = new Date(note.createdAt).toLocaleDateString();
     const colorClass = note.color ? `bg-${note.color}` : 'bg-yellow';
@@ -88,83 +68,66 @@ function Note({ note, onMouseDown, onDelete }) {
 
     return (
         <div className={`note-card ${colorClass}`} style={style} onMouseDown={(e) => onMouseDown(e, note._id)}>
-            <button className="delete-btn" onClick={(e) => { e.stopPropagation(); onDelete(note._id); }}>&times;</button>
-            <h3>{note.title}</h3>
+            <div className="note-header">
+                <h3>{note.title}</h3>
+                <button className="delete-btn" onClick={(e) => { e.stopPropagation(); onDelete(note._id); }}>&times;</button>
+            </div>
             <p>{note.content}</p>
             <div className="date">{dateStr}</div>
         </div>
     );
 }
 
-// --- MAIN APP ---
 function App() {
     const [token, setToken] = useState(localStorage.getItem('notely_token'));
     const [userEmail, setUserEmail] = useState(localStorage.getItem('notely_email'));
     
-    // Data States
+    // Dados
     const [notes, setNotes] = useState([]);
     const [topics, setTopics] = useState([]);
     const [activeTopicId, setActiveTopicId] = useState(null);
     const [search, setSearch] = useState("");
     
-    // Drag States
+    // Drag
     const [draggingId, setDraggingId] = useState(null);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
 
-    // Modals
-    const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
-    const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
-    
-    // Edit Topic Modal
-    const [isEditTopicModalOpen, setIsEditTopicModalOpen] = useState(false);
-    const [editingTopicId, setEditingTopicId] = useState(null);
-    const [editingTopicName, setEditingTopicName] = useState("");
+    // Modais (Estados de Visibilidade)
+    const [modalState, setModalState] = useState({ type: null, data: null }); 
+    // Types: 'createNote', 'createTopic', 'editTopic', 'joinTopic', 'shareTopic'
 
     // Form States
-    const [newNoteTitle, setNewNoteTitle] = useState("");
-    const [newNoteContent, setNewNoteContent] = useState("");
-    const [newNoteTopic, setNewNoteTopic] = useState("");
-    const [newNoteColor, setNewNoteColor] = useState("yellow");
-    const [newTopicName, setNewTopicName] = useState("");
+    const [formData, setFormData] = useState({ 
+        title: "", content: "", color: "yellow", topicId: "", name: "", joinCode: "" 
+    });
 
-    // --- EFFECT: Load data ONLY if token exists ---
     useEffect(() => {
         if (token) carregarDados();
     }, [token]);
 
-    // Helper for Auth Fetch
     const authFetch = (url, options = {}) => {
         return fetch(url, {
             ...options,
-            headers: {
-                ...options.headers,
-                'Authorization': token, 
-                'Content-Type': 'application/json'
-            }
+            headers: { ...options.headers, 'Authorization': token, 'Content-Type': 'application/json' }
         });
     };
 
     const carregarDados = async () => {
         try {
             const resNotes = await authFetch('/api/notes');
-            if (resNotes.status === 401) return logout(); // Token expired
+            if (resNotes.status === 401) return logout();
             setNotes(await resNotes.json());
 
             const resTopics = await authFetch('/api/topics');
             const loadedTopics = await resTopics.json();
             setTopics(loadedTopics);
 
-            // Auto-select first topic if none active
             if (loadedTopics.length > 0) {
-                setActiveTopicId(prevId => {
-                    const topicExists = loadedTopics.find(t => t._id === prevId);
-                    return topicExists ? prevId : loadedTopics[0]._id;
-                });
+                setActiveTopicId(prev => loadedTopics.find(t => t._id === prev) ? prev : loadedTopics[0]._id);
             } else {
                 setActiveTopicId(null);
             }
-
-        } catch (error) { console.error("Error:", error); }
+        } catch (error) { console.error(error); }
     };
 
     const handleLogin = (newToken, email) => {
@@ -180,13 +143,7 @@ function App() {
         setNotes([]);
     };
 
-    // IF NOT LOGGED IN, SHOW LOGIN SCREEN
-    if (!token) {
-        return <LoginScreen onLogin={handleLogin} />;
-    }
-
-    // --- LOGIC (Drag, Save, Delete) ---
-
+    // --- Drag & Drop ---
     const handleMouseDown = (e, id) => {
         if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
         const note = notes.find(n => n._id === id);
@@ -209,226 +166,193 @@ function App() {
         await authFetch(`/api/notes?id=${note._id}`, { method: 'PUT', body: JSON.stringify({ x: note.x, y: note.y }) });
     };
 
+    // --- CRUD Operations ---
     const handleSaveNote = async () => {
-        if (!newNoteTitle) return alert("Title is required!");
-        
-        // Use selected topic in modal OR current active topic
-        const topicToUse = newNoteTopic || activeTopicId;
-        
-        if (!topicToUse) return alert("You must have a topic selected to create notes!");
+        if (!formData.title) return alert("Título obrigatório!");
+        const topicToUse = formData.topicId || activeTopicId;
+        if (!topicToUse) return alert("Crie um tópico primeiro!");
 
-        const randomX = 50 + Math.random() * 200; 
-        const randomY = 50 + Math.random() * 200;
-        
-        const novaNota = { 
-            title: newNoteTitle, 
-            content: newNoteContent, 
-            color: newNoteColor, 
-            topicId: topicToUse, 
-            x: randomX, 
-            y: randomY 
+        const newNote = { 
+            title: formData.title, content: formData.content, color: formData.color, 
+            topicId: topicToUse, x: 100, y: 100 
         };
-        
-        await authFetch('/api/notes', { method: 'POST', body: JSON.stringify(novaNota) });
-        setIsNoteModalOpen(false); setNewNoteTitle(""); setNewNoteContent(""); carregarDados();
+        await authFetch('/api/notes', { method: 'POST', body: JSON.stringify(newNote) });
+        closeModal(); carregarDados();
     };
 
     const handleDeleteNote = async (id) => {
-        if(!confirm("Delete note?")) return;
+        if(!confirm("Apagar nota?")) return;
         await authFetch(`/api/notes?id=${id}`, { method: 'DELETE' });
         setNotes(notes.filter(n => n._id !== id));
     };
 
     const handleSaveTopic = async () => {
-        if (!newTopicName) return;
-        await authFetch('/api/topics', { method: 'POST', body: JSON.stringify({ name: newTopicName }) });
-        setIsTopicModalOpen(false); setNewTopicName(""); carregarDados();
+        if (!formData.name) return;
+        await authFetch('/api/topics', { method: 'POST', body: JSON.stringify({ name: formData.name }) });
+        closeModal(); carregarDados();
     };
 
-    // Open Edit Modal
-    const openEditTopic = (e, topic) => {
-        e.stopPropagation(); 
-        setEditingTopicId(topic._id);
-        setEditingTopicName(topic.name);
-        setIsEditTopicModalOpen(true);
-    };
-
-    // Save Edit
     const handleUpdateTopic = async () => {
-        if (!editingTopicName) return;
-        
-        const res = await authFetch(`/api/topics?id=${editingTopicId}`, { 
-            method: 'PUT', 
-            body: JSON.stringify({ name: editingTopicName }) 
-        });
-
-        if (!res.ok) {
-            const data = await res.json();
-            return alert(data.error || "Error updating");
-        }
-
-        setIsEditTopicModalOpen(false);
-        carregarDados();
+        await authFetch(`/api/topics?id=${modalState.data._id}`, { method: 'PUT', body: JSON.stringify({ name: formData.name }) });
+        closeModal(); carregarDados();
     };
 
     const handleDeleteTopic = async (e, id, name) => {
         e.stopPropagation();
-        if (!confirm(`Delete topic "${name}"? Notes will become hidden until moved.`)) return;
-
+        if (!confirm(`Apagar tópico "${name}" e ocultar as suas notas?`)) return;
         await authFetch(`/api/topics?id=${id}`, { method: 'DELETE' });
         carregarDados();
     };
 
-    // Filter notes by Active Topic
-    const filteredNotes = notes.filter(n => {
-        return (n.topicId === activeTopicId) &&
-               (n.title.toLowerCase().includes(search.toLowerCase()) || n.content.toLowerCase().includes(search.toLowerCase()));
-    });
-    
-    const activeTopicName = activeTopicId ? topics.find(t => t._id === activeTopicId)?.name : "Select a Topic";
+    // --- NOVAS FUNÇÕES (Partilha) ---
+    const handleJoinTopic = async () => {
+        if (!formData.joinCode) return alert("Insira o código!");
+        const res = await authFetch('/api/topics/join', { method: 'POST', body: JSON.stringify({ code: formData.joinCode }) });
+        if (!res.ok) return alert("Código inválido ou erro ao entrar.");
+        
+        closeModal(); 
+        carregarDados();
+        alert("Entraste no tópico com sucesso!");
+    };
+
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text);
+        alert("Código copiado!");
+    };
+
+    // --- Modal Helpers ---
+    const openModal = (type, data = null) => {
+        setModalState({ type, data });
+        setFormData({ 
+            title: "", content: "", color: "yellow", topicId: activeTopicId || "", 
+            name: data ? data.name : "", joinCode: "" 
+        });
+    };
+    const closeModal = () => setModalState({ type: null, data: null });
+
+    if (!token) return <LoginScreen onLogin={handleLogin} />;
+
+    const filteredNotes = notes.filter(n => n.topicId === activeTopicId && 
+        (n.title.toLowerCase().includes(search.toLowerCase()) || n.content.toLowerCase().includes(search.toLowerCase()))
+    );
+    const activeTopic = topics.find(t => t._id === activeTopicId);
 
     return (
         <div id="app-container" onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
             <aside id="sidebar">
-                {/* TOP PART (Logo + Actions + Topics) */}
                 <div className="sidebar-content">
                     <div className="brand"><h1>Notely</h1></div>
                     
                     <div className="actions">
-                        <button className="btn-primary" onClick={() => setIsNoteModalOpen(true)}>New Note</button>
-                        <button className="btn-secondary" onClick={() => setIsTopicModalOpen(true)}>New Topic</button>
+                        <button className="btn-primary" onClick={() => openModal('createNote')}>+ Nota</button>
+                        <div style={{ display: 'flex', gap: '5px' }}>
+                            <button className="btn-secondary" style={{flex:1}} onClick={() => openModal('createTopic')}>+ Tópico</button>
+                            <button className="btn-secondary" style={{flex:1}} onClick={() => openModal('joinTopic')}>Junta-te ↵</button>
+                        </div>
                     </div>
 
                     <div className="topics-section">
-                        <h3>Topics</h3>
+                        <h3>Os teus Tópicos</h3>
                         <ul id="topics-list">
                             {topics.map(t => (
-                            <li key={t._id} className={activeTopicId === t._id ? 'active' : ''} onClick={() => setActiveTopicId(t._id)}>
-                                <span>{t.name}</span>
-                                <div className="topic-actions-group">
-                                    {/* Edit Button */}
-                                    <button className="icon-btn" title="Edit" onClick={(e) => openEditTopic(e, t)}>✎</button>
-                                    
-                                    {/* Delete Button */}
-                                    <button 
-                                        className="icon-btn delete" 
-                                        title="Delete"
-                                        onClick={(e) => handleDeleteTopic(e, t._id, t.name)}
-                                    >
-                                        &times;
-                                    </button>
-                                </div>
-                            </li>
-                        ))}
+                                <li key={t._id} className={activeTopicId === t._id ? 'active' : ''} onClick={() => setActiveTopicId(t._id)}>
+                                    <span>{t.name}</span>
+                                    <div className="topic-actions-group">
+                                        <button className="icon-btn share" title="Partilhar Código" onClick={(e) => { e.stopPropagation(); openModal('shareTopic', t); }}>🔗</button>
+                                        <button className="icon-btn" title="Editar" onClick={(e) => { e.stopPropagation(); openModal('editTopic', t); }}>✎</button>
+                                        <button className="icon-btn delete" title="Apagar" onClick={(e) => handleDeleteTopic(e, t._id, t.name)}>&times;</button>
+                                    </div>
+                                </li>
+                            ))}
                         </ul>
                     </div>
                 </div>
-
-                {/* BOTTOM PART (Profile + Logout) */}
                 <div className="user-profile">
-                    <div className="avatar">
-                        {userEmail ? userEmail.charAt(0).toUpperCase() : '?'}
-                    </div>
-                    
+                    <div className="avatar">{userEmail.charAt(0).toUpperCase()}</div>
                     <div className="user-info">
                         <span className="email-text">{userEmail}</span>
-                        <button onClick={logout} className="logout-link">Logout</button>
+                        <button onClick={logout} className="logout-link">Sair</button>
                     </div>
                 </div>
             </aside>
 
             <main id="main-content">
                 <header>
-                    <h2 id="current-topic-title">{activeTopicName}</h2>
+                    <div id="current-topic-title">{activeTopic ? activeTopic.name : "Seleciona um Tópico"}</div>
                     <div className="search-box">
-                        <input type="text" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
+                        <input type="text" placeholder="Pesquisar..." value={search} onChange={e => setSearch(e.target.value)} />
                     </div>
                 </header>
                 <div id="notes-grid">
-                    {filteredNotes.map(n => (
-                        <Note key={n._id} note={n} onMouseDown={handleMouseDown} onDelete={handleDeleteNote} />
-                    ))}
-                    
-                    {/* Empty State Message */}
-                    {filteredNotes.length === 0 && activeTopicId && (
-                        <div style={{ padding: '20px', color: '#666' }}>
-                            <p>Empty topic. Create a new note!</p>
-                        </div>
-                    )}
+                    {filteredNotes.map(n => <Note key={n._id} note={n} onMouseDown={handleMouseDown} onDelete={handleDeleteNote} />)}
                 </div>
             </main>
 
-            {/* CREATE NOTE MODAL */}
-            {isNoteModalOpen && (
+            {/* --- MODAIS --- */}
+            {modalState.type && (
                 <div id="modal-overlay">
-                    <div id="modal-content">
-                        <h2>New Note</h2>
-                        <input type="text" placeholder="Title" value={newNoteTitle} onChange={e => setNewNoteTitle(e.target.value)} />
+                    <div id="modal-content" className={['createTopic', 'joinTopic', 'shareTopic'].includes(modalState.type) ? 'small-modal' : ''}>
                         
-                        <select value={newNoteTopic} onChange={e => setNewNoteTopic(e.target.value)}>
-                            <option value="">(Current Topic: {activeTopicName})</option>
-                            {topics.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
-                        </select>
-                        
-                        <div className="color-picker">
-                            {['yellow', 'blue', 'green', 'red'].map(c => (
-                                <button key={c} className={`color-btn bg-${c} ${newNoteColor === c ? 'selected' : ''}`} onClick={() => setNewNoteColor(c)}></button>
-                            ))}
-                        </div>
-                        <textarea placeholder="Content" value={newNoteContent} onChange={e => setNewNoteContent(e.target.value)}></textarea>
-                        <div className="modal-actions">
-                            <button id="btn-cancel" onClick={() => setIsNoteModalOpen(false)}>Cancel</button>
-                            <button id="btn-save" className="btn-primary" onClick={handleSaveNote}>Save</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-            
-            {/* CREATE TOPIC MODAL */}
-             {isTopicModalOpen && (
-                <div id="modal-overlay">
-                    <div id="modal-content" className="small-modal"> 
-                        <h2>New Topic</h2>
-                        
-                        <input 
-                            type="text" 
-                            placeholder="Topic Name" 
-                            maxLength={20}
-                            value={newTopicName} 
-                            onChange={e => setNewTopicName(e.target.value)} 
-                        />
-                        
-                        <div style={{ textAlign: 'right', fontSize: '12px', fontWeight: '800', marginTop: '5px' }}>
-                            {newTopicName.length}/20
-                        </div>
+                        {/* 1. NOVA NOTA */}
+                        {modalState.type === 'createNote' && <>
+                            <h2>Nova Nota</h2>
+                            <input type="text" placeholder="Título" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} autoFocus />
+                            <div className="color-picker">
+                                {['yellow', 'blue', 'green', 'red'].map(c => (
+                                    <button key={c} className={`color-btn bg-${c} ${formData.color === c ? 'selected' : ''}`} onClick={() => setFormData({...formData, color: c})}></button>
+                                ))}
+                            </div>
+                            <textarea placeholder="Conteúdo..." value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})}></textarea>
+                            <div className="modal-actions">
+                                <button id="btn-cancel" onClick={closeModal}>Cancelar</button>
+                                <button id="btn-save" onClick={handleSaveNote}>Guardar</button>
+                            </div>
+                        </>}
 
-                        <div className="modal-actions">
-                            <button id="btn-cancel" onClick={() => setIsTopicModalOpen(false)}>Cancel</button>
-                            <button id="btn-save" className="btn-primary" onClick={handleSaveTopic}>Create</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                        {/* 2. NOVO TÓPICO */}
+                        {modalState.type === 'createTopic' && <>
+                            <h2>Novo Tópico</h2>
+                            <input type="text" placeholder="Nome" maxLength={20} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} autoFocus />
+                            <div className="modal-actions">
+                                <button id="btn-cancel" onClick={closeModal}>Cancelar</button>
+                                <button id="btn-save" onClick={handleSaveTopic}>Criar</button>
+                            </div>
+                        </>}
 
-            {/* EDIT TOPIC MODAL */}
-            {isEditTopicModalOpen && (
-                <div id="modal-overlay">
-                    <div id="modal-content" className="small-modal"> 
-                        <h2>Edit Topic</h2>
-                        <input 
-                            type="text" 
-                            placeholder="Name" 
-                            maxLength={20} 
-                            value={editingTopicName} 
-                            onChange={e => setEditingTopicName(e.target.value)} 
-                        />
-                        <div style={{textAlign:'right', fontSize:'12px', fontWeight:'800', marginTop:'5px'}}>
-                            {editingTopicName.length}/20
-                        </div>
-                        <div className="modal-actions">
-                            <button id="btn-cancel" onClick={() => setIsEditTopicModalOpen(false)}>Cancel</button>
-                            <button id="btn-save" className="btn-primary" onClick={handleUpdateTopic}>Save</button>
-                        </div>
+                        {/* 3. EDITAR TÓPICO */}
+                        {modalState.type === 'editTopic' && <>
+                            <h2>Renomear</h2>
+                            <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} autoFocus />
+                            <div className="modal-actions">
+                                <button id="btn-cancel" onClick={closeModal}>Cancelar</button>
+                                <button id="btn-save" onClick={handleUpdateTopic}>Salvar</button>
+                            </div>
+                        </>}
+
+                        {/* 4. ENTRAR EM TÓPICO (JOIN) */}
+                        {modalState.type === 'joinTopic' && <>
+                            <h2>Entrar em Tópico</h2>
+                            <p style={{textAlign:'center', marginBottom:'10px'}}>Cola aqui o código que te enviaram:</p>
+                            <input type="text" placeholder="Ex: A1B2C3" maxLength={6} style={{textAlign:'center', letterSpacing:'2px'}} value={formData.joinCode} onChange={e => setFormData({...formData, joinCode: e.target.value.toUpperCase()})} autoFocus />
+                            <div className="modal-actions">
+                                <button id="btn-cancel" onClick={closeModal}>Cancelar</button>
+                                <button id="btn-save" onClick={handleJoinTopic}>Junta-te</button>
+                            </div>
+                        </>}
+
+                        {/* 5. PARTILHAR (SHARE) */}
+                        {modalState.type === 'shareTopic' && <>
+                            <h2>Partilhar</h2>
+                            <p className="small-text">Envia este código aos teus amigos:</p>
+                            <div className="share-code-display" onClick={() => copyToClipboard(modalState.data.shareCode)}>
+                                {modalState.data.shareCode}
+                            </div>
+                            <p className="small-text" style={{fontSize:'10px'}}>(Clica para copiar)</p>
+                            <div className="modal-actions">
+                                <button id="btn-save" style={{width:'100%'}} onClick={closeModal}>Fechar</button>
+                            </div>
+                        </>}
+
                     </div>
                 </div>
             )}

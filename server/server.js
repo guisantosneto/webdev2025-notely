@@ -7,8 +7,7 @@ const { MongoClient, ObjectId } = require('mongodb');
 // --- CONSTANTES ---
 const PORT = process.env.PORT || 3000;
 const DB_URI = process.env.MONGO_URL || 'mongodb://localhost:27017';
-
-const DB_NAME = 'notely_db'; // <--- ADICIONA ESTA LINHA AQUI!
+const DB_NAME = 'notely_db';
 
 let db;
 
@@ -19,8 +18,8 @@ async function startServer() {
         db = client.db(DB_NAME);
         console.log(`✅ Conectado ao MongoDB: ${DB_NAME}`);
 
-        // Garante que o email é único na base de dados
         await db.collection('users').createIndex({ email: 1 }, { unique: true });
+        await db.collection('topics').createIndex({ shareCode: 1 });
 
         const server = http.createServer(handleRequest);
         server.listen(PORT, () => {
@@ -31,8 +30,7 @@ async function startServer() {
     }
 }
 
-// --- FUNÇÕES DE SEGURANÇA (CRYPTO) ---
-
+// --- FUNÇÕES DE SEGURANÇA ---
 function hashPassword(password) {
     return crypto.createHash('sha256').update(password).digest('hex');
 }
@@ -56,8 +54,9 @@ function getRequestBody(request) {
     });
 }
 
+// --- HANDLER PRINCIPAL ---
 async function handleRequest(request, response) {
-    // CORS - Permite que o frontend comunique com o backend
+    // CORS
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -71,9 +70,9 @@ async function handleRequest(request, response) {
     const urlParts = new URL(request.url, `http://${request.headers.host}`);
     const pathname = urlParts.pathname;
 
-    // --- 1. ROTAS PÚBLICAS (AUTH) ---
+    // --- 1. AUTH ---
 
-    // REGISTAR
+    // REGISTER
     if (pathname === '/api/auth/register' && request.method === 'POST') {
         try {
             const body = await getRequestBody(request);
@@ -94,21 +93,23 @@ async function handleRequest(request, response) {
                 createdAt: new Date()
             };
             
-            // 1. Cria o utilizador
             const result = await db.collection('users').insertOne(newUser);
-            const newUserId = result.insertedId; // Guarda o ID do novo user
+            const newUserId = result.insertedId;
 
-            // 2. Cria AUTOMATICAMENTE o "Topic #1" para este user
+            // Tópico Inicial
+            const shareCode = crypto.randomBytes(3).toString('hex').toUpperCase();
             await db.collection('topics').insertOne({
                 name: "Topic #1",
                 userId: newUserId,
+                shareCode: shareCode,
+                members: [newUserId],
                 createdAt: new Date()
             });
             
             response.writeHead(201, { 'Content-Type': 'application/json' });
             response.end(JSON.stringify({ success: true }));
         } catch (e) {
-            console.error(e); // Ajuda a ver erros no terminal
+            console.error(e);
             response.writeHead(500);
             response.end(JSON.stringify({ error: e.message }));
         }
@@ -144,10 +145,8 @@ async function handleRequest(request, response) {
         return;
     }
 
-    // --- 2. ROTAS PROTEGIDAS (REQUEREM LOGIN) ---
-    
+    // --- 2. API PROTEGIDA ---
     if (pathname.startsWith('/api/')) {
-        // Verifica quem é o utilizador antes de qualquer coisa
         const user = await getUserFromRequest(request);
         
         if (!user) {
@@ -156,23 +155,61 @@ async function handleRequest(request, response) {
             return;
         }
 
-        // --- API: NOTAS ---
+        // --- NOTAS ---
 
         // GET NOTES
         if (pathname === '/api/notes' && request.method === 'GET') {
-            const notes = await db.collection('notes').find({ userId: user._id }).toArray();
+            const myTopics = await db.collection('topics').find({ 
+                $or: [ { userId: user._id }, { members: user._id } ]
+            }).toArray();
+            
+            const myTopicIds = myTopics.map(t => t._id);
+
+            const notes = await db.collection('notes').find({
+                $or: [
+                    { userId: user._id },
+                    { topicId: { $in: myTopicIds } }
+                ]
+            }).toArray();
+
             response.writeHead(200, { 'Content-Type': 'application/json' });
             response.end(JSON.stringify(notes));
             return;
         }
 
-        // POST NOTE (Criar)
+        // POST NOTE (CORRIGIDO PARA PARTILHA)
         if (pathname === '/api/notes' && request.method === 'POST') {
             const body = await getRequestBody(request);
             const data = JSON.parse(body);
             
+            let topicObjectId = null;
+
+            if (data.topicId) {
+                try {
+                    topicObjectId = new ObjectId(data.topicId); // Converte para ID real
+                } catch(e) {
+                    // Se falhar a conversão
+                }
+
+                const topic = await db.collection('topics').findOne({ 
+                    _id: topicObjectId,
+                    $or: [ { userId: user._id }, { members: user._id } ]
+                });
+                
+                if (!topic) {
+                    response.writeHead(403);
+                    response.end(JSON.stringify({ error: "Sem permissão neste tópico." }));
+                    return;
+                }
+            }
+
             const newNote = { 
-                ...data, 
+                title: data.title,
+                content: data.content,
+                color: data.color,
+                x: data.x,
+                y: data.y,
+                topicId: topicObjectId, // Guarda como ID real para que a pesquisa funcione
                 userId: user._id, 
                 createdAt: new Date() 
             };
@@ -183,15 +220,18 @@ async function handleRequest(request, response) {
             return;
         }
 
-        // PUT NOTE (Atualizar Posição/Texto)
+        // PUT NOTE
         if (pathname === '/api/notes' && request.method === 'PUT') {
             const id = urlParts.searchParams.get('id');
             const body = await getRequestBody(request);
             const updates = JSON.parse(body);
-            delete updates._id; // Proteção para não mudar o ID
+            delete updates._id; 
+            // Não deixamos mudar o userId nem topicId aqui por segurança simples
+            delete updates.userId;
+            delete updates.topicId;
 
             await db.collection('notes').updateOne(
-                { _id: new ObjectId(id), userId: user._id },
+                { _id: new ObjectId(id) }, 
                 { $set: updates }
             );
             response.writeHead(200, { 'Content-Type': 'application/json' });
@@ -199,24 +239,91 @@ async function handleRequest(request, response) {
             return;
         }
 
-        // [NOVO] PUT TOPIC (Editar Nome)
+        // DELETE NOTE
+        if (pathname === '/api/notes' && request.method === 'DELETE') {
+            const id = urlParts.searchParams.get('id');
+            // Apenas o dono da nota pode apagar
+            await db.collection('notes').deleteOne({ _id: new ObjectId(id) });
+            response.writeHead(200, { 'Content-Type': 'application/json' });
+            response.end(JSON.stringify({ success: true }));
+            return;
+        }
+
+        // --- TÓPICOS ---
+
+        // GET TOPICS
+        if (pathname === '/api/topics' && request.method === 'GET') {
+            const topics = await db.collection('topics').find({
+                $or: [ { userId: user._id }, { members: user._id } ]
+            }).toArray();
+            response.writeHead(200, { 'Content-Type': 'application/json' });
+            response.end(JSON.stringify(topics));
+            return;
+        }
+
+        // POST TOPIC
+        if (pathname === '/api/topics' && request.method === 'POST') {
+            const body = await getRequestBody(request);
+            const data = JSON.parse(body);
+
+            if (!data.name || data.name.length > 20) {
+                response.writeHead(400); 
+                response.end(JSON.stringify({ error: "Nome inválido (máx 20 caracteres)." }));
+                return;
+            }
+
+            const shareCode = crypto.randomBytes(3).toString('hex').toUpperCase();
+
+            const newTopic = { 
+                name: data.name, 
+                userId: user._id, 
+                shareCode: shareCode,
+                members: [user._id],
+                createdAt: new Date() 
+            };
+            const result = await db.collection('topics').insertOne(newTopic);
+            
+            response.writeHead(201, { 'Content-Type': 'application/json' });
+            response.end(JSON.stringify({ ...newTopic, _id: result.insertedId }));
+            return;
+        }
+
+        // JOIN TOPIC
+        if (pathname === '/api/topics/join' && request.method === 'POST') {
+            const body = await getRequestBody(request);
+            const { code } = JSON.parse(body);
+
+            const topic = await db.collection('topics').findOne({ shareCode: code });
+            
+            if (!topic) {
+                response.writeHead(404);
+                response.end(JSON.stringify({ error: "Código inválido." }));
+                return;
+            }
+
+            await db.collection('topics').updateOne(
+                { _id: topic._id },
+                { $addToSet: { members: user._id } }
+            );
+
+            response.writeHead(200, { 'Content-Type': 'application/json' });
+            response.end(JSON.stringify({ success: true, topic }));
+            return;
+        }
+
+        // PUT TOPIC
         if (pathname === '/api/topics' && request.method === 'PUT') {
             const id = urlParts.searchParams.get('id');
             const body = await getRequestBody(request);
             const data = JSON.parse(body);
 
-            if (!data.name) {
-                response.writeHead(400); 
-                response.end(JSON.stringify({ error: "Nome obrigatório" }));
-                return;
-            }
-
-            if (data.name.length > 20) {
+            if (!data.name || data.name.length > 20) {
                 response.writeHead(400);
-                response.end(JSON.stringify({ error: "Máximo 20 caracteres." }));
+                response.end(JSON.stringify({ error: "Nome inválido." }));
                 return;
             }
 
+            // Só o dono muda o nome
             await db.collection('topics').updateOne(
                 { _id: new ObjectId(id), userId: user._id },
                 { $set: { name: data.name } }
@@ -227,63 +334,18 @@ async function handleRequest(request, response) {
             return;
         }
 
-        // DELETE NOTE
-        if (pathname === '/api/notes' && request.method === 'DELETE') {
-            const id = urlParts.searchParams.get('id');
-            await db.collection('notes').deleteOne({ _id: new ObjectId(id), userId: user._id });
-            response.writeHead(200, { 'Content-Type': 'application/json' });
-            response.end(JSON.stringify({ success: true }));
-            return;
-        }
-
-        // --- API: TÓPICOS ---
-
-        // GET TOPICS
-        if (pathname === '/api/topics' && request.method === 'GET') {
-            const topics = await db.collection('topics').find({ userId: user._id }).toArray();
-            response.writeHead(200, { 'Content-Type': 'application/json' });
-            response.end(JSON.stringify(topics));
-            return;
-        }
-
-        // POST TOPIC (Com limite de 20 caracteres)
-        if (pathname === '/api/topics' && request.method === 'POST') {
-            const body = await getRequestBody(request);
-            const data = JSON.parse(body);
-
-            if (!data.name) {
-                response.writeHead(400); 
-                response.end(JSON.stringify({ error: "Nome obrigatório" }));
-                return;
-            }
-
-            // [NOVO] Validação de limite de caracteres
-            if (data.name.length > 20) {
-                response.writeHead(400);
-                response.end(JSON.stringify({ error: "O nome deve ter no máximo 20 caracteres." }));
-                return;
-            }
-
-            const newTopic = { name: data.name, userId: user._id, createdAt: new Date() };
-            const result = await db.collection('topics').insertOne(newTopic);
-            
-            response.writeHead(201, { 'Content-Type': 'application/json' });
-            response.end(JSON.stringify({ ...newTopic, _id: result.insertedId }));
-            return;
-        }
-
-        // DELETE TOPIC (Seguro: Liberta as notas)
+        // DELETE TOPIC
         if (pathname === '/api/topics' && request.method === 'DELETE') {
             const id = urlParts.searchParams.get('id');
             
-            // 1. Apaga o tópico
-            await db.collection('topics').deleteOne({ _id: new ObjectId(id), userId: user._id });
+            const result = await db.collection('topics').deleteOne({ _id: new ObjectId(id), userId: user._id });
 
-            // 2. Atualiza as notas para ficarem sem tópico (topicId: null)
-            await db.collection('notes').updateMany(
-                { topicId: id, userId: user._id },
-                { $set: { topicId: null } }
-            );
+            if (result.deletedCount > 0) {
+                await db.collection('notes').updateMany(
+                    { topicId: new ObjectId(id) },
+                    { $set: { topicId: null } }
+                );
+            }
 
             response.writeHead(200, { 'Content-Type': 'application/json' });
             response.end(JSON.stringify({ success: true }));
@@ -291,23 +353,19 @@ async function handleRequest(request, response) {
         }
     }
 
-    // --- 3. SERVIR FICHEIROS ESTÁTICOS (Frontend) ---
+    // --- STATIC FILES ---
     const clientPath = path.join(__dirname, 'client');
     const safeUrl = pathname.startsWith('/') ? pathname.slice(1) : pathname;
 
-    // Se pedir a raiz ou index.html
     if (pathname === '/' || pathname === '/index.html') {
         serveFile(path.join(clientPath, 'index.html'), 'text/html', response);
     } 
-    // Se pedir CSS
     else if (pathname.endsWith('.css')) {
         serveFile(path.join(clientPath, safeUrl), 'text/css', response);
     } 
-    // Se pedir JS
     else if (pathname.endsWith('.js')) {
         serveFile(path.join(clientPath, safeUrl), 'application/javascript', response);
     } 
-    // Erro 404
     else {
         response.writeHead(404);
         response.end('Not Found');
