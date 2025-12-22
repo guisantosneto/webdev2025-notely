@@ -61,10 +61,10 @@ mongoimport --db notely_db --collection topics --file dataset_topics.json --json
 ### 2.2 Instalação das Bibliotecas
 
 Abra o terminal na pasta server/ do projeto e execute:
-
+```bash
 cd server
 npm install
-
+```
 ---
 
 ## 3. Iniciar o Servidor (Backend & Web App)
