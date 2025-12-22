@@ -106,7 +106,8 @@ Para utilizar a versão desktop nativa, deve utilizar o executável fornecido.
 ## 5. Instruções de Utilização da App
 
 * **Registo e Login:** Utilize o ecrã inicial para criar conta ou entrar.
-* **Criar Notas:** Clique no botão `+` para adicionar uma nota ao quadro.
+* **Criar Tópico:** Clique no botão `+TÓPICO` para adicionar um tópico à sidebar.
+* **Criar Notas:** Clique no botão `+NOTA` para adicionar uma nota ao quadro.
 * **Editar:** Clique no texto da nota para alterar o conteúdo. As alterações são salvas ao sair do campo de texto.
 * **Mover:** Arraste a nota pela barra superior para mudar a sua posição `(X, Y)`.
 * **Partilha (Tópicos):**
