@@ -256,7 +256,7 @@ header {
 
 .search-box input:focus { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #000; }
 
-/* --- NOTES GRID & CARD (ATUALIZADO PARA RESIZE) --- */
+/* --- NOTES GRID & CARD --- */
 #notes-grid {
     position: relative;
     width: 100%;
@@ -265,20 +265,25 @@ header {
 
 .note-card {
     position: absolute;
-    /* Tamanho controlado via inline styles pelo JS */
     border: 3px solid #000;
     border-radius: 0;
     box-shadow: 6px 6px 0px #000;
     display: flex;
-    flex-direction: column; /* Organização vertical */
+    flex-direction: column; 
     justify-content: space-between;
     cursor: grab;
     user-select: none;
-    /* IMPORTANTE: Transição apenas na sombra. Removemos width/height para o resize ser fluido */
     transition: box-shadow 0.1s; 
     background: white;
-    min-width: 150px; /* Segurança mínima */
-    min-height: 150px;
+    min-width: 150px; 
+    min-height: 150px; /* Altura mínima normal */
+}
+
+/* --- ESTILO PARA NOTA MINIMIZADA (NOVO) --- */
+.note-card.minimized {
+    min-height: 0 !important; /* Remove limite mínimo */
+    height: auto !important;  /* Ajusta ao conteúdo (só header) */
+    box-shadow: 3px 3px 0px #000; /* Sombra menor opcional */
 }
 
 .note-card:active {
@@ -289,7 +294,6 @@ header {
 
 .note-card:hover { z-index: 10; }
 
-/* Header da Nota */
 .note-header {
     background-color: rgba(255,255,255,0.5);
     border-bottom: 2px solid #000;
@@ -297,7 +301,12 @@ header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex-shrink: 0; /* Garante que o header não encolhe/desaparece */
+    flex-shrink: 0; 
+}
+
+/* Se a nota estiver minimizada, removemos a borda inferior do header para ficar mais limpo */
+.note-card.minimized .note-header {
+    border-bottom: none;
 }
 
 .note-header h3 {
@@ -307,14 +316,13 @@ header {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 75%;
+    max-width: 65%; /* Ajustado para dar espaço aos botões */
 }
 
-/* Área de Conteúdo da Nota (NOVO) */
 .note-content-area {
     padding: 10px;
-    flex-grow: 1; /* Ocupa todo o espaço restante */
-    overflow-y: auto; /* Scroll se o texto for maior que a nota */
+    flex-grow: 1; 
+    overflow-y: auto; 
     font-size: 15px;
     color: #000;
     font-weight: 500;
@@ -323,12 +331,10 @@ header {
     overflow-wrap: break-word;
 }
 
-/* Scrollbar personalizada minimalista */
 .note-content-area::-webkit-scrollbar { width: 6px; }
 .note-content-area::-webkit-scrollbar-track { background: transparent; }
 .note-content-area::-webkit-scrollbar-thumb { background: #000; }
 
-/* Footer da Nota */
 .note-footer {
     padding: 5px 10px;
     border-top: 1px solid rgba(0,0,0,0.1);
@@ -337,7 +343,7 @@ header {
     align-items: center;
     font-size: 10px;
     background-color: rgba(255,255,255,0.3);
-    flex-shrink: 0; /* Garante que o footer não encolhe */
+    flex-shrink: 0; 
 }
 
 .note-card .delete-btn {
@@ -350,16 +356,14 @@ header {
 }
 .note-card .delete-btn:hover { color: #ff4444; }
 
-/* MANIPULADOR DE REDIMENSIONAMENTO (O Triângulo no Canto) */
 .resize-handle {
     width: 15px;
     height: 15px;
     position: absolute;
     bottom: 0;
     right: 0;
-    cursor: se-resize; /* Cursor diagonal padrão */
+    cursor: se-resize; 
     z-index: 20;
-    /* Cria visualmente um triângulo preto no canto inferior direito */
     background: linear-gradient(135deg, transparent 50%, #000 50%);
 }
 

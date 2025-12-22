@@ -92,11 +92,14 @@ function LoginScreen({ onLogin }) {
     );
 }
 
-/* --- COMPONENTE NOTE (RESIZE POR ARRASTO) --- */
-function Note({ note, onMouseDown, onDelete, onEdit, onResizeStart }) {
+/* --- COMPONENTE NOTE (RESIZE + MINIMIZE) --- */
+function Note({ note, onMouseDown, onDelete, onEdit, onResizeStart, onToggleMinimize }) {
     const dateStr = new Date(note.createdAt).toLocaleDateString();
     const colorClass = note.color ? `bg-${note.color}` : 'bg-yellow';
     
+    // Verificamos se está minimizada
+    const isMinimized = note.isMinimized || false;
+
     const width = note.width || 250;
     const height = note.height || 250;
 
@@ -104,41 +107,52 @@ function Note({ note, onMouseDown, onDelete, onEdit, onResizeStart }) {
         left: `${note.x || 50}px`, 
         top: `${note.y || 50}px`,
         width: `${width}px`,
-        height: `${height}px`,
+        // Se estiver minimizada, a altura é automática (só o header)
+        height: isMinimized ? 'auto' : `${height}px`,
         zIndex: note.isDragging ? 1000 : 1
     };
 
     return (
-        <div className={`note-card ${colorClass}`} style={style} onMouseDown={(e) => onMouseDown(e, note._id)}>
+        <div className={`note-card ${colorClass} ${isMinimized ? 'minimized' : ''}`} style={style} onMouseDown={(e) => onMouseDown(e, note._id)}>
+            
             {/* Cabeçalho */}
             <div className="note-header">
                 <h3>{note.title}</h3>
-                <div style={{display:'flex', gap:'5px'}}>
+                <div style={{display:'flex', gap:'5px', alignItems:'center'}}>
+                     {/* BOTÃO MINIMIZAR */}
+                     <button className="icon-btn" title={isMinimized ? "Expandir" : "Minimizar"} style={{fontSize:'14px', fontWeight:'bold'}} 
+                        onClick={(e) => { e.stopPropagation(); onToggleMinimize(note._id, !isMinimized); }}>
+                        {isMinimized ? '+' : '−'}
+                     </button>
+                     
                      <button className="icon-btn" title="Editar" style={{fontSize:'12px'}} 
                         onClick={(e) => { e.stopPropagation(); onEdit(note); }}>✎</button>
+                    
                     <button className="delete-btn" title="Apagar" 
                         onClick={(e) => { e.stopPropagation(); onDelete(note._id); }}>&times;</button>
                 </div>
             </div>
             
-            {/* Conteúdo */}
-            <div className="note-content-area">
-                {note.content}
-            </div>
-            
-            {/* Footer */}
-            <div className="note-footer">
-                <span className="date">{dateStr}</span>
-            </div>
+            {/* Se NÃO estiver minimizada, mostra conteúdo, rodapé e resize */}
+            {!isMinimized && (
+                <>
+                    <div className="note-content-area">
+                        {note.content}
+                    </div>
+                    
+                    <div className="note-footer">
+                        <span className="date">{dateStr}</span>
+                    </div>
 
-            {/* MANIPULADOR DE RESIZE (O TRIÂNGULO NO CANTO) */}
-            <div 
-                className="resize-handle" 
-                onMouseDown={(e) => {
-                    e.stopPropagation(); // Não iniciar o drag da nota
-                    onResizeStart(e, note);
-                }}
-            ></div>
+                    <div 
+                        className="resize-handle" 
+                        onMouseDown={(e) => {
+                            e.stopPropagation(); 
+                            onResizeStart(e, note);
+                        }}
+                    ></div>
+                </>
+            )}
         </div>
     );
 }
@@ -153,12 +167,9 @@ function App() {
     const [activeTopicId, setActiveTopicId] = useState(null);
     const [search, setSearch] = useState("");
     
-    // Mover Nota (Drag)
+    // Drag e Resize
     const [draggingId, setDraggingId] = useState(null);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
-
-    // Redimensionar Nota (Resize)
-    // Guardamos o ID da nota, a posição inicial do rato e o tamanho inicial da nota
     const [resizingState, setResizingState] = useState(null); 
 
     // Modais e Formulários
@@ -171,7 +182,7 @@ function App() {
     const draggingIdRef = useRef(null);
     const resizingStateRef = useRef(null);
 
-    // Refs para os intervalos saberem se estamos a mexer em algo
+    // Refs para controlo de atualizações
     draggingIdRef.current = draggingId;
     resizingStateRef.current = resizingState;
 
@@ -200,7 +211,6 @@ function App() {
             if (resNotes.status === 401) return logout();
             const notesData = await resNotes.json();
             
-            // Se estivermos a meio de uma interação, não atualizamos as notas para não "saltar"
             if (draggingIdRef.current === null && resizingStateRef.current === null) {
                 setNotes(notesData);
             }
@@ -250,30 +260,36 @@ function App() {
         });
     };
 
+    // --- MINIMIZAR NOTA ---
+    const handleToggleMinimize = async (id, isMinimized) => {
+        // Atualiza localmente
+        setNotes(prev => prev.map(n => n._id === id ? { ...n, isMinimized } : n));
+        
+        // Guarda no servidor (Persistência)
+        await authFetch(`/api/notes?id=${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ isMinimized: isMinimized })
+        });
+    };
+
     // --- EVENTOS GLOBAIS DE RATO ---
     const handleMouseMove = (e) => {
-        // Caso 1: Mover a nota
         if (draggingId) {
             const newX = e.clientX - offset.x;
             const newY = e.clientY - offset.y;
             setNotes(prev => prev.map(n => n._id === draggingId ? { ...n, x: newX, y: newY, isDragging: true } : n));
         }
         
-        // Caso 2: Redimensionar a nota
         if (resizingState) {
             const deltaX = e.clientX - resizingState.startX;
             const deltaY = e.clientY - resizingState.startY;
-
-            // Define um tamanho mínimo para não quebrar o layout (ex: 150px)
             const newWidth = Math.max(150, resizingState.startWidth + deltaX);
             const newHeight = Math.max(150, resizingState.startHeight + deltaY);
-
             setNotes(prev => prev.map(n => n._id === resizingState.id ? { ...n, width: newWidth, height: newHeight } : n));
         }
     };
 
     const handleMouseUp = async () => {
-        // Fim do Mover
         if (draggingId) {
             const note = notes.find(n => n._id === draggingId);
             setNotes(prev => prev.map(n => n._id === draggingId ? { ...n, isDragging: false } : n));
@@ -282,10 +298,8 @@ function App() {
             carregarDados();
         }
 
-        // Fim do Resize
         if (resizingState) {
             const note = notes.find(n => n._id === resizingState.id);
-            // Salva as novas dimensões no servidor
             await authFetch(`/api/notes?id=${note._id}`, { 
                 method: 'PUT', 
                 body: JSON.stringify({ width: note.width, height: note.height }) 
@@ -329,19 +343,13 @@ function App() {
 
     const handleUpdateNote = async () => {
         if (!formData.title) return setAlertMsg("Título obrigatório!");
-        
         const noteId = modalState.data._id;
         const updates = {
             title: formData.title,
             content: formData.content,
             color: formData.color
         };
-
-        await authFetch(`/api/notes?id=${noteId}`, { 
-            method: 'PUT', 
-            body: JSON.stringify(updates) 
-        });
-
+        await authFetch(`/api/notes?id=${noteId}`, { method: 'PUT', body: JSON.stringify(updates) });
         closeModal();
         carregarDados();
     };
@@ -459,6 +467,7 @@ function App() {
                             onDelete={clickDeleteNote}
                             onEdit={clickEditNote}
                             onResizeStart={handleResizeStart}
+                            onToggleMinimize={handleToggleMinimize} // Passamos a nova função
                         />
                     ))}
                 </div>
