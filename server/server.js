@@ -4,7 +4,6 @@ const path = require('path');
 const crypto = require('crypto');
 const { MongoClient, ObjectId } = require('mongodb');
 
-// --- CONSTANTES ---
 const PORT = process.env.PORT || 3000;
 const DB_URI = process.env.MONGO_URL || 'mongodb://localhost:27017';
 const DB_NAME = 'notely_db';
@@ -30,7 +29,6 @@ async function startServer() {
     }
 }
 
-// --- FUNÇÕES DE SEGURANÇA ---
 function hashPassword(password) {
     return crypto.createHash('sha256').update(password).digest('hex');
 }
@@ -54,9 +52,9 @@ function getRequestBody(request) {
     });
 }
 
-// --- HANDLER PRINCIPAL ---
+
 async function handleRequest(request, response) {
-    // CORS
+    
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -70,9 +68,8 @@ async function handleRequest(request, response) {
     const urlParts = new URL(request.url, `http://${request.headers.host}`);
     const pathname = urlParts.pathname;
 
-    // --- 1. AUTH ---
+    
 
-    // REGISTER
     if (pathname === '/api/auth/register' && request.method === 'POST') {
         try {
             const body = await getRequestBody(request);
@@ -96,7 +93,6 @@ async function handleRequest(request, response) {
             const result = await db.collection('users').insertOne(newUser);
             const newUserId = result.insertedId;
 
-            // Tópico Inicial
             const shareCode = crypto.randomBytes(3).toString('hex').toUpperCase();
             await db.collection('topics').insertOne({
                 name: "Topic #1",
@@ -116,7 +112,6 @@ async function handleRequest(request, response) {
         return;
     }
 
-    // LOGIN
     if (pathname === '/api/auth/login' && request.method === 'POST') {
         try {
             const body = await getRequestBody(request);
@@ -145,7 +140,6 @@ async function handleRequest(request, response) {
         return;
     }
 
-    // --- 2. API PROTEGIDA ---
     if (pathname.startsWith('/api/')) {
         const user = await getUserFromRequest(request);
         
@@ -155,9 +149,7 @@ async function handleRequest(request, response) {
             return;
         }
 
-        // --- NOTAS ---
 
-        // GET NOTES
         if (pathname === '/api/notes' && request.method === 'GET') {
             const myTopics = await db.collection('topics').find({ 
                 $or: [ { userId: user._id }, { members: user._id } ]
@@ -177,7 +169,6 @@ async function handleRequest(request, response) {
             return;
         }
 
-        // POST NOTE (CORRIGIDO PARA PARTILHA)
         if (pathname === '/api/notes' && request.method === 'POST') {
             const body = await getRequestBody(request);
             const data = JSON.parse(body);
@@ -186,9 +177,8 @@ async function handleRequest(request, response) {
 
             if (data.topicId) {
                 try {
-                    topicObjectId = new ObjectId(data.topicId); // Converte para ID real
+                    topicObjectId = new ObjectId(data.topicId); 
                 } catch(e) {
-                    // Se falhar a conversão
                 }
 
                 const topic = await db.collection('topics').findOne({ 
@@ -209,7 +199,7 @@ async function handleRequest(request, response) {
                 color: data.color,
                 x: data.x,
                 y: data.y,
-                topicId: topicObjectId, // Guarda como ID real para que a pesquisa funcione
+                topicId: topicObjectId, 
                 userId: user._id, 
                 createdAt: new Date() 
             };
@@ -220,13 +210,11 @@ async function handleRequest(request, response) {
             return;
         }
 
-        // PUT NOTE
         if (pathname === '/api/notes' && request.method === 'PUT') {
             const id = urlParts.searchParams.get('id');
             const body = await getRequestBody(request);
             const updates = JSON.parse(body);
             delete updates._id; 
-            // Não deixamos mudar o userId nem topicId aqui por segurança simples
             delete updates.userId;
             delete updates.topicId;
 
@@ -239,19 +227,15 @@ async function handleRequest(request, response) {
             return;
         }
 
-        // DELETE NOTE
         if (pathname === '/api/notes' && request.method === 'DELETE') {
             const id = urlParts.searchParams.get('id');
-            // Apenas o dono da nota pode apagar
             await db.collection('notes').deleteOne({ _id: new ObjectId(id) });
             response.writeHead(200, { 'Content-Type': 'application/json' });
             response.end(JSON.stringify({ success: true }));
             return;
         }
 
-        // --- TÓPICOS ---
 
-        // GET TOPICS
         if (pathname === '/api/topics' && request.method === 'GET') {
             const topics = await db.collection('topics').find({
                 $or: [ { userId: user._id }, { members: user._id } ]
@@ -261,7 +245,6 @@ async function handleRequest(request, response) {
             return;
         }
 
-        // POST TOPIC
         if (pathname === '/api/topics' && request.method === 'POST') {
             const body = await getRequestBody(request);
             const data = JSON.parse(body);
@@ -288,7 +271,6 @@ async function handleRequest(request, response) {
             return;
         }
 
-        // JOIN TOPIC
         if (pathname === '/api/topics/join' && request.method === 'POST') {
             const body = await getRequestBody(request);
             const { code } = JSON.parse(body);
@@ -311,7 +293,6 @@ async function handleRequest(request, response) {
             return;
         }
 
-        // PUT TOPIC
         if (pathname === '/api/topics' && request.method === 'PUT') {
             const id = urlParts.searchParams.get('id');
             const body = await getRequestBody(request);
@@ -323,7 +304,6 @@ async function handleRequest(request, response) {
                 return;
             }
 
-            // Só o dono muda o nome
             await db.collection('topics').updateOne(
                 { _id: new ObjectId(id), userId: user._id },
                 { $set: { name: data.name } }
@@ -334,7 +314,6 @@ async function handleRequest(request, response) {
             return;
         }
 
-        // DELETE TOPIC
         if (pathname === '/api/topics' && request.method === 'DELETE') {
             const id = urlParts.searchParams.get('id');
             
@@ -353,7 +332,6 @@ async function handleRequest(request, response) {
         }
     }
 
-    // --- STATIC FILES ---
     const clientPath = path.join(__dirname, 'client');
     const safeUrl = pathname.startsWith('/') ? pathname.slice(1) : pathname;
 

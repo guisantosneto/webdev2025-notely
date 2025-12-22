@@ -1,6 +1,5 @@
 const { useState, useEffect, useRef } = React;
 
-/* --- COMPONENTE 1: ALERTA SIMPLES --- */
 function CustomAlert({ message, onClose }) {
     if (!message) return null;
     return (
@@ -16,7 +15,6 @@ function CustomAlert({ message, onClose }) {
     );
 }
 
-/* --- COMPONENTE 2: CONFIRMAÇÃO --- */
 function CustomConfirm({ message, onConfirm, onCancel }) {
     return (
         <div id="modal-overlay" onClick={onCancel}>
@@ -92,12 +90,10 @@ function LoginScreen({ onLogin }) {
     );
 }
 
-/* --- COMPONENTE NOTE (RESIZE + MINIMIZE) --- */
 function Note({ note, onMouseDown, onDelete, onEdit, onResizeStart, onToggleMinimize }) {
     const dateStr = new Date(note.createdAt).toLocaleDateString();
     const colorClass = note.color ? `bg-${note.color}` : 'bg-yellow';
     
-    // Verificamos se está minimizada
     const isMinimized = note.isMinimized || false;
 
     const width = note.width || 250;
@@ -107,7 +103,6 @@ function Note({ note, onMouseDown, onDelete, onEdit, onResizeStart, onToggleMini
         left: `${note.x || 50}px`, 
         top: `${note.y || 50}px`,
         width: `${width}px`,
-        // Se estiver minimizada, a altura é automática (só o header)
         height: isMinimized ? 'auto' : `${height}px`,
         zIndex: note.isDragging ? 1000 : 1
     };
@@ -115,11 +110,11 @@ function Note({ note, onMouseDown, onDelete, onEdit, onResizeStart, onToggleMini
     return (
         <div className={`note-card ${colorClass} ${isMinimized ? 'minimized' : ''}`} style={style} onMouseDown={(e) => onMouseDown(e, note._id)}>
             
-            {/* Cabeçalho */}
+            {}
             <div className="note-header">
                 <h3>{note.title}</h3>
                 <div style={{display:'flex', gap:'5px', alignItems:'center'}}>
-                     {/* BOTÃO MINIMIZAR */}
+                     {}
                      <button className="icon-btn" title={isMinimized ? "Expandir" : "Minimizar"} style={{fontSize:'14px', fontWeight:'bold'}} 
                         onClick={(e) => { e.stopPropagation(); onToggleMinimize(note._id, !isMinimized); }}>
                         {isMinimized ? '+' : '−'}
@@ -133,7 +128,7 @@ function Note({ note, onMouseDown, onDelete, onEdit, onResizeStart, onToggleMini
                 </div>
             </div>
             
-            {/* Se NÃO estiver minimizada, mostra conteúdo, rodapé e resize */}
+            {}
             {!isMinimized && (
                 <>
                     <div className="note-content-area">
@@ -161,18 +156,17 @@ function App() {
     const [token, setToken] = useState(localStorage.getItem('notely_token'));
     const [userEmail, setUserEmail] = useState(localStorage.getItem('notely_email'));
     
-    // Dados
     const [notes, setNotes] = useState([]);
     const [topics, setTopics] = useState([]);
     const [activeTopicId, setActiveTopicId] = useState(null);
     const [search, setSearch] = useState("");
     
-    // Drag e Resize
+    const [zoom, setZoom] = useState(1);
+
     const [draggingId, setDraggingId] = useState(null);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [resizingState, setResizingState] = useState(null); 
 
-    // Modais e Formulários
     const [modalState, setModalState] = useState({ type: null, data: null }); 
     const [formData, setFormData] = useState({ title: "", content: "", color: "yellow", topicId: "", name: "", joinCode: "" });
     
@@ -182,7 +176,6 @@ function App() {
     const draggingIdRef = useRef(null);
     const resizingStateRef = useRef(null);
 
-    // Refs para controlo de atualizações
     draggingIdRef.current = draggingId;
     resizingStateRef.current = resizingState;
 
@@ -190,7 +183,6 @@ function App() {
         if (!token) return;
         carregarDados();
         const intervalId = setInterval(() => {
-            // Só atualiza se o utilizador NÃO estiver a arrastar nem a redimensionar
             if (draggingIdRef.current === null && resizingStateRef.current === null) {
                 carregarDados(true); 
             }
@@ -241,7 +233,6 @@ function App() {
         setNotes([]);
     };
 
-    // --- LOGICA DE MOVER (DRAG) ---
     const handleMouseDown = (e, id) => {
         if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.className === 'resize-handle') return;
         const note = notes.find(n => n._id === id);
@@ -249,7 +240,6 @@ function App() {
         setOffset({ x: e.clientX - (note.x || 50), y: e.clientY - (note.y || 50) });
     };
 
-    // --- LOGICA DE REDIMENSIONAR (RESIZE) ---
     const handleResizeStart = (e, note) => {
         setResizingState({
             id: note._id,
@@ -260,19 +250,15 @@ function App() {
         });
     };
 
-    // --- MINIMIZAR NOTA ---
     const handleToggleMinimize = async (id, isMinimized) => {
-        // Atualiza localmente
         setNotes(prev => prev.map(n => n._id === id ? { ...n, isMinimized } : n));
         
-        // Guarda no servidor (Persistência)
         await authFetch(`/api/notes?id=${id}`, {
             method: 'PUT',
             body: JSON.stringify({ isMinimized: isMinimized })
         });
     };
 
-    // --- EVENTOS GLOBAIS DE RATO ---
     const handleMouseMove = (e) => {
         if (draggingId) {
             const newX = e.clientX - offset.x;
@@ -309,7 +295,10 @@ function App() {
         }
     };
 
-    // --- Eliminação ---
+    const zoomIn = () => setZoom(prev => Math.min(prev + 0.1, 3)); 
+    const zoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.2)); 
+    const resetZoom = () => setZoom(1);
+
     const clickDeleteNote = (id) => {
         setConfirmState({ show: true, action: 'note', id: id });
     };
@@ -330,7 +319,6 @@ function App() {
         setConfirmState({ show: false, action: null, id: null });
     };
 
-    // --- Edição e Criação ---
     const clickEditNote = (note) => {
         setFormData({
             title: note.title,
@@ -393,7 +381,6 @@ function App() {
         setAlertMsg("Código copiado!");
     };
 
-    // --- Modais ---
     const openModal = (type, data = null) => {
         setModalState({ type, data });
         if (type !== 'editNote') {
@@ -454,11 +441,21 @@ function App() {
             <main id="main-content">
                 <header>
                     <div id="current-topic-title">{activeTopic ? activeTopic.name : "Seleciona um Tópico"}</div>
+                    
+                    {}
+                    <div className="zoom-controls">
+                        <button onClick={zoomOut} title="Diminuir">−</button>
+                        <span onClick={resetZoom} title="Repor Zoom">{Math.round(zoom * 100)}%</span>
+                        <button onClick={zoomIn} title="Aumentar">+</button>
+                    </div>
+
                     <div className="search-box">
                         <input type="text" placeholder="Pesquisar..." value={search} onChange={e => setSearch(e.target.value)} />
                     </div>
                 </header>
-                <div id="notes-grid">
+                
+                {}
+                <div id="notes-grid" style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}>
                     {filteredNotes.map(n => (
                         <Note 
                             key={n._id} 
@@ -467,18 +464,18 @@ function App() {
                             onDelete={clickDeleteNote}
                             onEdit={clickEditNote}
                             onResizeStart={handleResizeStart}
-                            onToggleMinimize={handleToggleMinimize} // Passamos a nova função
+                            onToggleMinimize={handleToggleMinimize} 
                         />
                     ))}
                 </div>
             </main>
 
-            {/* --- MODAIS DE FORMULÁRIO --- */}
+            {}
             {modalState.type && (
                 <div id="modal-overlay">
                     <div id="modal-content" className={['createTopic', 'joinTopic', 'shareTopic'].includes(modalState.type) ? 'small-modal' : ''}>
                         
-                        {/* 1. NOVA NOTA */}
+                        {}
                         {modalState.type === 'createNote' && <>
                             <h2>Nova Nota</h2>
                             <input type="text" placeholder="Título" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} autoFocus />
@@ -494,7 +491,7 @@ function App() {
                             </div>
                         </>}
 
-                        {/* 1.1 EDITAR NOTA */}
+                        {}
                         {modalState.type === 'editNote' && <>
                             <h2>Editar Nota</h2>
                             <input type="text" placeholder="Título" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} autoFocus />
@@ -510,7 +507,7 @@ function App() {
                             </div>
                         </>}
 
-                        {/* 2. NOVO TÓPICO */}
+                        {}
                         {modalState.type === 'createTopic' && <>
                             <h2>Novo Tópico</h2>
                             <input type="text" placeholder="Nome" maxLength={20} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} autoFocus />
@@ -520,7 +517,7 @@ function App() {
                             </div>
                         </>}
 
-                        {/* 3. EDITAR TÓPICO */}
+                        {}
                         {modalState.type === 'editTopic' && <>
                             <h2>Renomear</h2>
                             <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} autoFocus />
@@ -530,7 +527,7 @@ function App() {
                             </div>
                         </>}
 
-                        {/* 4. ENTRAR EM TÓPICO */}
+                        {}
                         {modalState.type === 'joinTopic' && <>
                             <h2>Entrar em Tópico</h2>
                             <p style={{textAlign:'center', marginBottom:'10px'}}>Cola aqui o código que te enviaram:</p>
@@ -541,7 +538,7 @@ function App() {
                             </div>
                         </>}
 
-                        {/* 5. PARTILHAR */}
+                        {}
                         {modalState.type === 'shareTopic' && <>
                             <h2>Partilhar</h2>
                             <p className="small-text">Envia este código aos teus amigos:</p>
