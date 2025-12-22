@@ -57,7 +57,7 @@ body {
 .actions {
     display: flex;
     flex-direction: column;
-    gap: 15px; /* Espaço entre os botões */
+    gap: 15px; 
     margin-bottom: 30px;
 }
 
@@ -68,45 +68,21 @@ body {
     border: 3px solid #000;
     border-radius: 0;
     cursor: pointer;
-    font-size: 15px; /* Ligeiramente menor para caberem todos */
+    font-size: 15px;
     font-weight: 800;
     text-transform: uppercase;
     box-shadow: 4px 4px 0px #000;
     transition: all 0.1s;
-    margin-bottom: 0; /* O gap do flex trata disto agora */
+    margin-bottom: 0;
 }
 
-.btn-primary {
-    background-color: #222;
-    color: white;
-}
+.btn-primary { background-color: #222; color: white; }
+.btn-primary:hover { background-color: #000; transform: translate(2px, 2px); box-shadow: 2px 2px 0px #000; }
+.btn-primary:active { transform: translate(4px, 4px); box-shadow: none; }
 
-.btn-primary:hover {
-    background-color: #000;
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
-}
-
-.btn-primary:active {
-    transform: translate(4px, 4px);
-    box-shadow: none;
-}
-
-.btn-secondary {
-    background-color: #fff;
-    color: #000;
-}
-
-.btn-secondary:hover {
-    background-color: #f0f0f0;
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
-}
-
-.btn-secondary:active {
-    transform: translate(4px, 4px);
-    box-shadow: none;
-}
+.btn-secondary { background-color: #fff; color: #000; }
+.btn-secondary:hover { background-color: #f0f0f0; transform: translate(2px, 2px); box-shadow: 2px 2px 0px #000; }
+.btn-secondary:active { transform: translate(4px, 4px); box-shadow: none; }
 
 /* --- TÓPICOS --- */
 .topics-section h3 {
@@ -120,10 +96,7 @@ body {
     padding-bottom: 5px;
 }
 
-#topics-list {
-    list-style: none;
-    padding: 0;
-}
+#topics-list { list-style: none; padding: 0; }
 
 #topics-list li {
     padding: 10px 15px;
@@ -163,24 +136,20 @@ body {
     display: block;
 }
 
-/* Grupo de Ações do Tópico (Editar, Partilhar, Apagar) */
 .topic-actions-group {
     display: flex;
     gap: 4px;
     align-items: center;
-    opacity: 0; /* Escondido por defeito */
+    opacity: 0;
     transition: opacity 0.2s;
 }
 
-#topics-list li:hover .topic-actions-group {
-    opacity: 1;
-}
+#topics-list li:hover .topic-actions-group { opacity: 1; }
 
-/* Botões Pequenos (Ícones) */
 .icon-btn {
     background: transparent;
     border: none;
-    color: inherit; /* Herda a cor do pai (branco se ativo, preto se inativo) */
+    color: inherit;
     font-size: 14px;
     cursor: pointer;
     padding: 4px;
@@ -190,18 +159,10 @@ body {
     justify-content: center;
 }
 
-.icon-btn:hover {
-    background-color: rgba(0,0,0,0.1);
-    transform: scale(1.1);
-}
-
-#topics-list li.active .icon-btn:hover {
-    background-color: rgba(255,255,255,0.2);
-}
-
-/* Cores específicas para ações no hover */
+.icon-btn:hover { background-color: rgba(0,0,0,0.1); transform: scale(1.1); }
+#topics-list li.active .icon-btn:hover { background-color: rgba(255,255,255,0.2); }
 .icon-btn.delete:hover { color: #ff4444; }
-.icon-btn.share:hover { color: #2563eb; } /* Azul para partilha */
+.icon-btn.share:hover { color: #2563eb; }
 
 /* --- PERFIL --- */
 .user-profile {
@@ -228,11 +189,7 @@ body {
     box-shadow: 2px 2px 0px rgba(0,0,0,0.3);
 }
 
-.user-info {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
+.user-info { display: flex; flex-direction: column; overflow: hidden; }
 
 .email-text {
     font-size: 13px;
@@ -297,105 +254,115 @@ header {
     outline: none;
 }
 
-.search-box input:focus {
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
-}
+.search-box input:focus { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #000; }
 
-/* --- NOTES GRID --- */
+/* --- NOTES GRID & CARD (ATUALIZADO PARA RESIZE) --- */
 #notes-grid {
     position: relative;
     width: 100%;
     height: 100%;
-    /* overflow hidden removido aqui para permitir scroll no main-content */
 }
 
 .note-card {
     position: absolute;
-    width: 240px;
-    min-height: 240px;
+    /* Tamanho controlado via inline styles pelo JS */
     border: 3px solid #000;
     border-radius: 0;
     box-shadow: 6px 6px 0px #000;
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* Organização vertical */
     justify-content: space-between;
     cursor: grab;
     user-select: none;
-    transition: transform 0.1s, box-shadow 0.1s;
-    background: white; /* Fallback */
+    /* IMPORTANTE: Transição apenas na sombra. Removemos width/height para o resize ser fluido */
+    transition: box-shadow 0.1s; 
+    background: white;
+    min-width: 150px; /* Segurança mínima */
+    min-height: 150px;
 }
 
 .note-card:active {
     cursor: grabbing;
-    transform: translate(3px, 3px);
     box-shadow: 3px 3px 0px #000;
     z-index: 1000 !important;
 }
 
-.note-card:hover {
-    z-index: 10;
+.note-card:hover { z-index: 10; }
+
+/* Header da Nota */
+.note-header {
+    background-color: rgba(255,255,255,0.5);
+    border-bottom: 2px solid #000;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0; /* Garante que o header não encolhe/desaparece */
 }
 
-.note-card h3 {
-    font-size: 18px;
+.note-header h3 {
+    font-size: 16px;
     font-weight: 800;
-    color: #000;
-    border-bottom: 3px solid #000;
     margin: 0;
-    padding: 12px 40px 12px 15px;
-    background-color: rgba(255,255,255,0.4);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 75%;
 }
 
-.note-card .delete-btn {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 40px;
-    height: 46px; /* Ajuste para alinhar com o header da nota */
-    background: transparent;
-    border: none;
-    border-left: 3px solid #000;
-    font-size: 24px;
-    color: #000;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s;
-}
-
-.note-card .delete-btn:hover {
-    background-color: #000;
-    color: #fff;
-}
-
-.note-card p {
-    padding: 15px;
+/* Área de Conteúdo da Nota (NOVO) */
+.note-content-area {
+    padding: 10px;
+    flex-grow: 1; /* Ocupa todo o espaço restante */
+    overflow-y: auto; /* Scroll se o texto for maior que a nota */
     font-size: 15px;
     color: #000;
-    font-weight: 600;
-    line-height: 1.5;
-    flex-grow: 1;
+    font-weight: 500;
+    line-height: 1.4;
     white-space: pre-wrap;
     overflow-wrap: break-word;
 }
 
-.note-card .date {
-    padding: 10px 15px;
-    font-size: 11px;
-    font-weight: 800;
-    text-transform: uppercase;
-    color: rgba(0,0,0,0.6);
-    text-align: right;
-    border-top: 3px solid #000;
-    background: rgba(255,255,255,0.3);
+/* Scrollbar personalizada minimalista */
+.note-content-area::-webkit-scrollbar { width: 6px; }
+.note-content-area::-webkit-scrollbar-track { background: transparent; }
+.note-content-area::-webkit-scrollbar-thumb { background: #000; }
+
+/* Footer da Nota */
+.note-footer {
+    padding: 5px 10px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    background-color: rgba(255,255,255,0.3);
+    flex-shrink: 0; /* Garante que o footer não encolhe */
 }
 
-/* Cores das Notas */
+.note-card .delete-btn {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    font-weight: bold;
+}
+.note-card .delete-btn:hover { color: #ff4444; }
+
+/* MANIPULADOR DE REDIMENSIONAMENTO (O Triângulo no Canto) */
+.resize-handle {
+    width: 15px;
+    height: 15px;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    cursor: se-resize; /* Cursor diagonal padrão */
+    z-index: 20;
+    /* Cria visualmente um triângulo preto no canto inferior direito */
+    background: linear-gradient(135deg, transparent 50%, #000 50%);
+}
+
 .bg-yellow { background-color: #fff7d1; }
 .bg-blue { background-color: #d1eaff; }
 .bg-green { background-color: #d1ffdb; }
@@ -404,10 +371,7 @@ header {
 /* --- MODALS --- */
 #modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0; width: 100%; height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(5px);
     display: flex;
@@ -422,216 +386,95 @@ header {
     border: 4px solid #000;
     width: 450px;
     box-shadow: 12px 12px 0px #000;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+    display: flex; flex-direction: column; gap: 15px;
 }
 
-/* Modal Pequeno (Create/Join/Share) */
-.small-modal {
-    width: 350px !important;
-}
+.small-modal { width: 350px !important; }
 
 #modal-content h2 {
-    margin-top: 0;
-    color: #000;
-    font-weight: 900;
-    text-transform: uppercase;
-    font-size: 24px;
-    text-align: center;
-    border-bottom: 3px solid #000;
-    padding-bottom: 15px;
-    margin-bottom: 10px;
+    margin: 0 0 10px 0; color: #000; font-weight: 900;
+    text-transform: uppercase; font-size: 24px; text-align: center;
+    border-bottom: 3px solid #000; padding-bottom: 15px;
 }
 
-#modal-content input,
-#modal-content select,
-#modal-content textarea {
-    padding: 12px;
-    border: 3px solid #000;
-    width: 100%;
-    font-family: inherit;
-    font-weight: 700;
-    background: #f4f4f4;
-    font-size: 14px;
-    outline: none;
+#modal-content input, #modal-content select, #modal-content textarea {
+    padding: 12px; border: 3px solid #000; width: 100%;
+    font-family: inherit; font-weight: 700; background: #f4f4f4;
+    font-size: 14px; outline: none;
 }
 
-#modal-content input:focus,
-#modal-content select:focus,
-#modal-content textarea:focus {
-    background: #fff;
-    box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+#modal-content input:focus, #modal-content select:focus, #modal-content textarea:focus {
+    background: #fff; box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
 }
 
-#modal-content textarea {
-    height: 120px;
-    resize: none;
-}
+#modal-content textarea { height: 120px; resize: none; }
 
-/* Estilos Específicos do Share Code */
 .share-code-display {
-    background: #e0e0e0;
-    border: 3px dashed #000;
-    padding: 20px;
-    text-align: center;
-    font-family: 'Courier New', monospace;
-    font-size: 32px;
-    font-weight: 900;
-    letter-spacing: 5px;
-    margin: 10px 0;
-    cursor: pointer;
-    transition: all 0.2s;
+    background: #e0e0e0; border: 3px dashed #000;
+    padding: 20px; text-align: center;
+    font-family: 'Courier New', monospace; font-size: 32px;
+    font-weight: 900; letter-spacing: 5px; margin: 10px 0;
+    cursor: pointer; transition: all 0.2s;
 }
+.share-code-display:hover { background: #fff; transform: scale(1.02); }
+.share-code-display:active { background: #000; color: #fff; border-style: solid; }
 
-.share-code-display:hover {
-    background: #fff;
-    transform: scale(1.02);
-}
+.small-text { text-align: center; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666; margin-top: -10px; }
 
-.share-code-display:active {
-    background: #000;
-    color: #fff;
-    border-style: solid;
-}
-
-.small-text {
-    text-align: center;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #666;
-    margin-top: -10px;
-}
-
-/* Color Picker */
-.color-picker {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin: 10px 0;
-}
-
+.color-picker { display: flex; gap: 10px; justify-content: center; margin: 10px 0; }
 .color-btn {
-    width: 40px;
-    height: 40px;
-    border: 3px solid #000;
-    cursor: pointer;
-    box-shadow: 3px 3px 0px #000;
-    transition: transform 0.1s;
+    width: 40px; height: 40px; border: 3px solid #000;
+    cursor: pointer; box-shadow: 3px 3px 0px #000; transition: transform 0.1s;
 }
-
 .color-btn:hover { transform: translate(-2px, -2px); }
-
 .color-btn.selected {
-    transform: translate(2px, 2px);
-    box-shadow: none;
+    transform: translate(2px, 2px); box-shadow: none;
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>');
-    background-size: 24px;
-    background-position: center;
-    background-repeat: no-repeat;
+    background-size: 24px; background-position: center; background-repeat: no-repeat;
 }
 
-/* Ações do Modal */
-.modal-actions {
-    display: flex;
-    justify-content: space-between;
-    gap: 15px;
-    margin-top: 15px;
-}
-
+.modal-actions { display: flex; justify-content: space-between; gap: 15px; margin-top: 15px; }
 .modal-actions button {
-    flex: 1;
-    padding: 12px;
-    font-weight: 800;
-    text-transform: uppercase;
-    border: 3px solid #000;
-    cursor: pointer;
-    font-size: 14px;
-    box-shadow: 4px 4px 0px #000;
+    flex: 1; padding: 12px; font-weight: 800; text-transform: uppercase;
+    border: 3px solid #000; cursor: pointer; font-size: 14px; box-shadow: 4px 4px 0px #000;
 }
 
-#btn-cancel {
-    background: #fff;
-    color: #000;
-}
-
-#btn-save {
-    background: #000;
-    color: #fff;
-}
-
-#btn-cancel:hover, #btn-save:hover {
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
-}
-
-#btn-cancel:active, #btn-save:active {
-    transform: translate(4px, 4px);
-    box-shadow: none;
-}
+#btn-cancel { background: #fff; color: #000; }
+#btn-save { background: #000; color: #fff; }
+#btn-cancel:hover, #btn-save:hover { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #000; }
+#btn-cancel:active, #btn-save:active { transform: translate(4px, 4px); box-shadow: none; }
 
 /* --- LOGIN SCREEN --- */
 #login-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    flex-direction: column;
+    display: flex; justify-content: center; align-items: center;
+    height: 100vh; flex-direction: column;
     background-color: #e0e0e0;
     background-image: radial-gradient(#000 1px, transparent 1px);
     background-size: 30px 30px;
 }
 
 .login-card {
-    background: white;
-    width: 100%;
-    max-width: 420px;
-    padding: 50px 40px;
-    border: 4px solid #000;
-    box-shadow: 12px 12px 0px #000;
-    display: flex;
-    flex-direction: column;
+    background: white; width: 100%; max-width: 420px;
+    padding: 50px 40px; border: 4px solid #000;
+    box-shadow: 12px 12px 0px #000; display: flex; flex-direction: column;
 }
 
 .login-card h3 {
-    font-size: 36px;
-    text-align: center;
-    margin-bottom: 35px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: -1px;
+    font-size: 36px; text-align: center; margin-bottom: 35px;
+    font-weight: 900; text-transform: uppercase; letter-spacing: -1px;
 }
 
 .error-msg {
-    color: white;
-    background-color: #ff4444;
-    border: 3px solid #000;
-    padding: 10px;
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 20px;
-    box-shadow: 4px 4px 0px #000;
+    color: white; background-color: #ff4444; border: 3px solid #000;
+    padding: 10px; text-align: center; font-weight: bold;
+    margin-bottom: 20px; box-shadow: 4px 4px 0px #000;
 }
 
-.login-card input {
-    margin-bottom: 20px;
-}
+.login-card input { margin-bottom: 20px; }
 
 .toggle-link {
-    margin-top: 30px;
-    text-align: center;
-    cursor: pointer;
-    font-weight: 800;
-    text-decoration: underline;
-    text-transform: uppercase;
-    font-size: 13px;
-    letter-spacing: 1px;
+    margin-top: 30px; text-align: center; cursor: pointer;
+    font-weight: 800; text-decoration: underline; text-transform: uppercase;
+    font-size: 13px; letter-spacing: 1px;
 }
-
-.toggle-link:hover {
-    background: #000;
-    color: #fff;
-    padding: 5px;
-    text-decoration: none;
-}
+.toggle-link:hover { background: #000; color: #fff; padding: 5px; text-decoration: none; }

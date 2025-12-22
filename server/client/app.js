@@ -1,6 +1,6 @@
 const { useState, useEffect, useRef } = React;
 
-/* --- COMPONENTE 1: ALERTA SIMPLES (Só botão OK) --- */
+/* --- COMPONENTE 1: ALERTA SIMPLES --- */
 function CustomAlert({ message, onClose }) {
     if (!message) return null;
     return (
@@ -16,7 +16,7 @@ function CustomAlert({ message, onClose }) {
     );
 }
 
-/* --- COMPONENTE 2: CONFIRMAÇÃO (Sim / Não) --- */
+/* --- COMPONENTE 2: CONFIRMAÇÃO --- */
 function CustomConfirm({ message, onConfirm, onCancel }) {
     return (
         <div id="modal-overlay" onClick={onCancel}>
@@ -92,22 +92,53 @@ function LoginScreen({ onLogin }) {
     );
 }
 
-function Note({ note, onMouseDown, onDelete }) {
+/* --- COMPONENTE NOTE (RESIZE POR ARRASTO) --- */
+function Note({ note, onMouseDown, onDelete, onEdit, onResizeStart }) {
     const dateStr = new Date(note.createdAt).toLocaleDateString();
     const colorClass = note.color ? `bg-${note.color}` : 'bg-yellow';
+    
+    const width = note.width || 250;
+    const height = note.height || 250;
+
     const style = {
-        left: `${note.x || 50}px`, top: `${note.y || 50}px`,
+        left: `${note.x || 50}px`, 
+        top: `${note.y || 50}px`,
+        width: `${width}px`,
+        height: `${height}px`,
         zIndex: note.isDragging ? 1000 : 1
     };
 
     return (
         <div className={`note-card ${colorClass}`} style={style} onMouseDown={(e) => onMouseDown(e, note._id)}>
+            {/* Cabeçalho */}
             <div className="note-header">
                 <h3>{note.title}</h3>
-                <button className="delete-btn" onClick={(e) => { e.stopPropagation(); onDelete(note._id); }}>&times;</button>
+                <div style={{display:'flex', gap:'5px'}}>
+                     <button className="icon-btn" title="Editar" style={{fontSize:'12px'}} 
+                        onClick={(e) => { e.stopPropagation(); onEdit(note); }}>✎</button>
+                    <button className="delete-btn" title="Apagar" 
+                        onClick={(e) => { e.stopPropagation(); onDelete(note._id); }}>&times;</button>
+                </div>
             </div>
-            <p>{note.content}</p>
-            <div className="date">{dateStr}</div>
+            
+            {/* Conteúdo */}
+            <div className="note-content-area">
+                {note.content}
+            </div>
+            
+            {/* Footer */}
+            <div className="note-footer">
+                <span className="date">{dateStr}</span>
+            </div>
+
+            {/* MANIPULADOR DE RESIZE (O TRIÂNGULO NO CANTO) */}
+            <div 
+                className="resize-handle" 
+                onMouseDown={(e) => {
+                    e.stopPropagation(); // Não iniciar o drag da nota
+                    onResizeStart(e, note);
+                }}
+            ></div>
         </div>
     );
 }
@@ -122,26 +153,36 @@ function App() {
     const [activeTopicId, setActiveTopicId] = useState(null);
     const [search, setSearch] = useState("");
     
-    // Drag
+    // Mover Nota (Drag)
     const [draggingId, setDraggingId] = useState(null);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+    // Redimensionar Nota (Resize)
+    // Guardamos o ID da nota, a posição inicial do rato e o tamanho inicial da nota
+    const [resizingState, setResizingState] = useState(null); 
 
     // Modais e Formulários
     const [modalState, setModalState] = useState({ type: null, data: null }); 
     const [formData, setFormData] = useState({ title: "", content: "", color: "yellow", topicId: "", name: "", joinCode: "" });
     
-    // ESTADOS PARA OS POPUPS PERSONALIZADOS
     const [alertMsg, setAlertMsg] = useState(null);
     const [confirmState, setConfirmState] = useState({ show: false, action: null, id: null, name: null });
 
     const draggingIdRef = useRef(null);
+    const resizingStateRef = useRef(null);
+
+    // Refs para os intervalos saberem se estamos a mexer em algo
     draggingIdRef.current = draggingId;
+    resizingStateRef.current = resizingState;
 
     useEffect(() => {
         if (!token) return;
         carregarDados();
         const intervalId = setInterval(() => {
-            if (draggingIdRef.current === null) carregarDados(true); 
+            // Só atualiza se o utilizador NÃO estiver a arrastar nem a redimensionar
+            if (draggingIdRef.current === null && resizingStateRef.current === null) {
+                carregarDados(true); 
+            }
         }, 2000);
         return () => clearInterval(intervalId);
     }, [token]);
@@ -153,13 +194,14 @@ function App() {
         });
     };
 
-    const carregarDados = async () => {
+    const carregarDados = async (background = false) => {
         try {
             const resNotes = await authFetch('/api/notes');
             if (resNotes.status === 401) return logout();
             const notesData = await resNotes.json();
             
-            if (draggingIdRef.current === null) {
+            // Se estivermos a meio de uma interação, não atualizamos as notas para não "saltar"
+            if (draggingIdRef.current === null && resizingStateRef.current === null) {
                 setNotes(notesData);
             }
 
@@ -189,44 +231,80 @@ function App() {
         setNotes([]);
     };
 
-    // --- Drag ---
+    // --- LOGICA DE MOVER (DRAG) ---
     const handleMouseDown = (e, id) => {
-        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.className === 'resize-handle') return;
         const note = notes.find(n => n._id === id);
         setDraggingId(id);
         setOffset({ x: e.clientX - (note.x || 50), y: e.clientY - (note.y || 50) });
     };
 
+    // --- LOGICA DE REDIMENSIONAR (RESIZE) ---
+    const handleResizeStart = (e, note) => {
+        setResizingState({
+            id: note._id,
+            startX: e.clientX,
+            startY: e.clientY,
+            startWidth: note.width || 250,
+            startHeight: note.height || 250
+        });
+    };
+
+    // --- EVENTOS GLOBAIS DE RATO ---
     const handleMouseMove = (e) => {
-        if (!draggingId) return;
-        const newX = e.clientX - offset.x;
-        const newY = e.clientY - offset.y;
-        setNotes(prev => prev.map(n => n._id === draggingId ? { ...n, x: newX, y: newY, isDragging: true } : n));
+        // Caso 1: Mover a nota
+        if (draggingId) {
+            const newX = e.clientX - offset.x;
+            const newY = e.clientY - offset.y;
+            setNotes(prev => prev.map(n => n._id === draggingId ? { ...n, x: newX, y: newY, isDragging: true } : n));
+        }
+        
+        // Caso 2: Redimensionar a nota
+        if (resizingState) {
+            const deltaX = e.clientX - resizingState.startX;
+            const deltaY = e.clientY - resizingState.startY;
+
+            // Define um tamanho mínimo para não quebrar o layout (ex: 150px)
+            const newWidth = Math.max(150, resizingState.startWidth + deltaX);
+            const newHeight = Math.max(150, resizingState.startHeight + deltaY);
+
+            setNotes(prev => prev.map(n => n._id === resizingState.id ? { ...n, width: newWidth, height: newHeight } : n));
+        }
     };
 
     const handleMouseUp = async () => {
-        if (!draggingId) return;
-        const note = notes.find(n => n._id === draggingId);
-        setNotes(prev => prev.map(n => n._id === draggingId ? { ...n, isDragging: false } : n));
-        await authFetch(`/api/notes?id=${note._id}`, { method: 'PUT', body: JSON.stringify({ x: note.x, y: note.y }) });
-        setDraggingId(null);
-        carregarDados();
+        // Fim do Mover
+        if (draggingId) {
+            const note = notes.find(n => n._id === draggingId);
+            setNotes(prev => prev.map(n => n._id === draggingId ? { ...n, isDragging: false } : n));
+            await authFetch(`/api/notes?id=${note._id}`, { method: 'PUT', body: JSON.stringify({ x: note.x, y: note.y }) });
+            setDraggingId(null);
+            carregarDados();
+        }
+
+        // Fim do Resize
+        if (resizingState) {
+            const note = notes.find(n => n._id === resizingState.id);
+            // Salva as novas dimensões no servidor
+            await authFetch(`/api/notes?id=${note._id}`, { 
+                method: 'PUT', 
+                body: JSON.stringify({ width: note.width, height: note.height }) 
+            });
+            setResizingState(null);
+            carregarDados();
+        }
     };
 
-    // --- ELIMINAÇÃO COM POPUP PERSONALIZADO ---
-    
-    // 1. Quando clica no lixo da Nota
+    // --- Eliminação ---
     const clickDeleteNote = (id) => {
         setConfirmState({ show: true, action: 'note', id: id });
     };
 
-    // 2. Quando clica no lixo do Tópico
     const clickDeleteTopic = (e, id, name) => {
         e.stopPropagation();
         setConfirmState({ show: true, action: 'topic', id: id, name: name });
     };
 
-    // 3. Quando confirma "Sim, apagar"
     const executeDelete = async () => {
         if (confirmState.action === 'note') {
             await authFetch(`/api/notes?id=${confirmState.id}`, { method: 'DELETE' });
@@ -238,7 +316,36 @@ function App() {
         setConfirmState({ show: false, action: null, id: null });
     };
 
-    // --- OUTRAS AÇÕES ---
+    // --- Edição e Criação ---
+    const clickEditNote = (note) => {
+        setFormData({
+            title: note.title,
+            content: note.content,
+            color: note.color || 'yellow',
+            topicId: note.topicId
+        });
+        openModal('editNote', note);
+    };
+
+    const handleUpdateNote = async () => {
+        if (!formData.title) return setAlertMsg("Título obrigatório!");
+        
+        const noteId = modalState.data._id;
+        const updates = {
+            title: formData.title,
+            content: formData.content,
+            color: formData.color
+        };
+
+        await authFetch(`/api/notes?id=${noteId}`, { 
+            method: 'PUT', 
+            body: JSON.stringify(updates) 
+        });
+
+        closeModal();
+        carregarDados();
+    };
+
     const handleSaveNote = async () => {
         if (!formData.title) return setAlertMsg("Título obrigatório!");
         const topicToUse = formData.topicId || activeTopicId;
@@ -281,10 +388,12 @@ function App() {
     // --- Modais ---
     const openModal = (type, data = null) => {
         setModalState({ type, data });
-        setFormData({ 
-            title: "", content: "", color: "yellow", topicId: activeTopicId || "", 
-            name: data ? data.name : "", joinCode: "" 
-        });
+        if (type !== 'editNote') {
+            setFormData({ 
+                title: "", content: "", color: "yellow", topicId: activeTopicId || "", 
+                name: data ? data.name : "", joinCode: "" 
+            });
+        }
     };
     const closeModal = () => setModalState({ type: null, data: null });
 
@@ -342,7 +451,16 @@ function App() {
                     </div>
                 </header>
                 <div id="notes-grid">
-                    {filteredNotes.map(n => <Note key={n._id} note={n} onMouseDown={handleMouseDown} onDelete={clickDeleteNote} />)}
+                    {filteredNotes.map(n => (
+                        <Note 
+                            key={n._id} 
+                            note={n} 
+                            onMouseDown={handleMouseDown} 
+                            onDelete={clickDeleteNote}
+                            onEdit={clickEditNote}
+                            onResizeStart={handleResizeStart}
+                        />
+                    ))}
                 </div>
             </main>
 
@@ -367,6 +485,22 @@ function App() {
                             </div>
                         </>}
 
+                        {/* 1.1 EDITAR NOTA */}
+                        {modalState.type === 'editNote' && <>
+                            <h2>Editar Nota</h2>
+                            <input type="text" placeholder="Título" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} autoFocus />
+                            <div className="color-picker">
+                                {['yellow', 'blue', 'green', 'red'].map(c => (
+                                    <button key={c} className={`color-btn bg-${c} ${formData.color === c ? 'selected' : ''}`} onClick={() => setFormData({...formData, color: c})}></button>
+                                ))}
+                            </div>
+                            <textarea placeholder="Conteúdo..." value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})}></textarea>
+                            <div className="modal-actions">
+                                <button id="btn-cancel" onClick={closeModal}>Cancelar</button>
+                                <button id="btn-save" onClick={handleUpdateNote}>Atualizar</button>
+                            </div>
+                        </>}
+
                         {/* 2. NOVO TÓPICO */}
                         {modalState.type === 'createTopic' && <>
                             <h2>Novo Tópico</h2>
@@ -387,7 +521,7 @@ function App() {
                             </div>
                         </>}
 
-                        {/* 4. ENTRAR EM TÓPICO (JOIN) */}
+                        {/* 4. ENTRAR EM TÓPICO */}
                         {modalState.type === 'joinTopic' && <>
                             <h2>Entrar em Tópico</h2>
                             <p style={{textAlign:'center', marginBottom:'10px'}}>Cola aqui o código que te enviaram:</p>
@@ -398,7 +532,7 @@ function App() {
                             </div>
                         </>}
 
-                        {/* 5. PARTILHAR (SHARE) */}
+                        {/* 5. PARTILHAR */}
                         {modalState.type === 'shareTopic' && <>
                             <h2>Partilhar</h2>
                             <p className="small-text">Envia este código aos teus amigos:</p>
@@ -415,10 +549,8 @@ function App() {
                 </div>
             )}
 
-            {/* --- ALERTA (Aviso) --- */}
             <CustomAlert message={alertMsg} onClose={() => setAlertMsg(null)} />
 
-            {/* --- CONFIRMAÇÃO (Apagar) --- */}
             {confirmState.show && (
                 <CustomConfirm 
                     message={confirmState.action === 'note' ? "Tens a certeza que queres apagar esta nota?" : "Tens a certeza que queres apagar este tópico?"}
