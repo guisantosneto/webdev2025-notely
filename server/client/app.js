@@ -406,7 +406,6 @@ function App() {
                                 {modalState.data.shareCode || "SEM CÓDIGO"}
                             </div>
                             {!modalState.data.shareCode && <p style={{color:'red', fontSize:'10px', textAlign:'center'}}>Tópico antigo. Cria um novo para teres código.</p>}
-                            <p className="small-text" style={{fontSize:'10px'}}>(Clica para copiar)</p>
                             <div className="modal-actions">
                                 <button id="btn-save" style={{width:'100%'}} onClick={closeModal}>Fechar</button>
                             </div>
