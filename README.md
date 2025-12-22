@@ -67,68 +67,47 @@ npm install
 
 ---
 
-### 3. Iniciar o Servidor (Backend & Web App)
+## 3. Iniciar o Servidor (Backend & Web App)
 
-O servidor Node.js é essencial para o funcionamento da aplicação e deve ser sempre o primeiro a ser iniciado.
+O servidor Node.js é central para o funcionamento da app e deve ser sempre **o primeiro a ser iniciado**.
 
-Abra um terminal na pasta server/
-
-Execute o comando:
-
-node server.js
-
-
-O servidor ficará ativo e poderá aceder à versão Web da aplicação através do navegador em:
-
-👉 http://10.17.0.29:3000/
+1.  Abra o terminal na pasta `server/`.
+2.  Execute o comando:
+    ```bash
+    node server.js
+    ```
+3.  O servidor ficará ativo. Pode testar o acesso via Web no endereço:
+    👉 **http://10.17.0.29:3000/**
 
 ---
 
-### 4. Iniciar a Aplicação Electron (Desktop)
+## 4. Instalar e Iniciar a Aplicação Electron (Desktop)
 
-Para utilizar a versão desktop nativa da aplicação:
+Para utilizar a versão desktop nativa, deve utilizar o executável fornecido.
 
-Mantenha o terminal do servidor a correr
+**Passos para instalação:**
 
-Abra um novo terminal na pasta server/
+1.  **Download do Executável:**
+    Descarregue o ficheiro de instalação `notely.exe` através do link oficial do projeto:
+    👉 **[Download notely.exe (Google Drive)](https://drive.google.com/file/d/1U4uSeWWtR9px4rlIOkxcDeIrOZ1Lh_E2/view?usp=sharing)**
 
-Execute o comando:
+2.  **Execução:**
+    Certifique-se de que o servidor (Passo 3) está a correr. De seguida, instale/execute o ficheiro `notely.exe`.
 
-npm start
+3.  **Utilização:**
+    A aplicação irá abrir uma janela nativa conectada automaticamente ao servidor do projeto.
 
-
-Este comando irá iniciar a aplicação Electron, configurada para aceder automaticamente ao endereço:
-
-http://10.17.0.29:3000
+*(Nota: Como alternativa para desenvolvimento, se tiver o código fonte, também pode executar `npm start` na pasta server, mas o método preferencial é o executável acima).*
 
 ---
 
-### 5. Instruções de Utilização da Aplicação
-Registo e Login
+## 5. Instruções de Utilização da App
 
-Utilize o ecrã inicial para criar uma conta ou iniciar sessão.
-
-Criar Notas
-
-Clique no botão + para adicionar uma nova nota ao quadro.
-
-Editar Notas
-
-Clique diretamente no texto da nota para editar o conteúdo.
-As alterações são guardadas automaticamente ao sair do campo de texto.
-
-Mover Notas
-
-Arraste a nota pela barra superior para alterar a sua posição (coordenadas X e Y).
-
-Partilha de Tópicos
-
-Crie um novo Tópico na barra lateral
-
-Copie o Share Code apresentado (exemplo: F7A29B)
-
-Envie esse código ao seu colega
-
-O colega deve clicar em Join Topic e inserir o código
-
-Após isso, ambos poderão ver e editar as mesmas notas em tempo real.
+* **Registo e Login:** Utilize o ecrã inicial para criar conta ou entrar.
+* **Criar Notas:** Clique no botão `+` para adicionar uma nota ao quadro.
+* **Editar:** Clique no texto da nota para alterar o conteúdo. As alterações são salvas ao sair do campo de texto.
+* **Mover:** Arraste a nota pela barra superior para mudar a sua posição `(X, Y)`.
+* **Partilha (Tópicos):**
+    * Crie um novo Tópico na barra lateral.
+    * Copie o **Share Code** apresentado (ex: `F7A29B`) e envie ao seu colega.
+    * O colega deve usar o botão "Join Topic" e inserir esse código para ver e editar as mesmas notas.
