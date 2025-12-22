@@ -1,10 +1,43 @@
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
+
+/* --- COMPONENTE 1: ALERTA SIMPLES (Só botão OK) --- */
+function CustomAlert({ message, onClose }) {
+    if (!message) return null;
+    return (
+        <div id="modal-overlay" onClick={onClose}>
+            <div id="modal-content" style={{maxWidth: '400px', textAlign: 'center'}} onClick={e => e.stopPropagation()}>
+                <h2 style={{border:'none', paddingBottom:0, marginBottom:'10px'}}>AVISO</h2>
+                <p style={{fontSize:'16px', marginBottom:'20px', lineHeight:'1.5'}}>{message}</p>
+                <div className="modal-actions">
+                    <button id="btn-save" style={{width:'100%'}} onClick={onClose}>OK</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* --- COMPONENTE 2: CONFIRMAÇÃO (Sim / Não) --- */
+function CustomConfirm({ message, onConfirm, onCancel }) {
+    return (
+        <div id="modal-overlay" onClick={onCancel}>
+            <div id="modal-content" style={{maxWidth: '400px', textAlign: 'center'}} onClick={e => e.stopPropagation()}>
+                <h2 style={{border:'none', paddingBottom:0, marginBottom:'10px'}}>TEM A CERTEZA?</h2>
+                <p style={{fontSize:'16px', marginBottom:'20px', lineHeight:'1.5'}}>{message}</p>
+                <div className="modal-actions">
+                    <button id="btn-cancel" onClick={onCancel}>Cancelar</button>
+                    <button id="btn-save" onClick={onConfirm}>Apagar</button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 function LoginScreen({ onLogin }) {
     const [isRegistering, setIsRegistering] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [alertMsg, setAlertMsg] = useState(null);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -27,7 +60,7 @@ function LoginScreen({ onLogin }) {
             if (!res.ok) throw new Error(data.error || "Erro desconhecido");
 
             if (isRegistering) {
-                alert("Conta criada! Faça login.");
+                setAlertMsg("Conta criada! Faça login.");
                 setIsRegistering(false);
                 setPassword("");
             } else {
@@ -54,6 +87,7 @@ function LoginScreen({ onLogin }) {
                     {isRegistering ? '← Voltar ao Login' : 'Não tem conta? Crie uma →'}
                 </p>
             </div>
+            <CustomAlert message={alertMsg} onClose={() => setAlertMsg(null)} />
         </div>
     );
 }
@@ -92,17 +126,24 @@ function App() {
     const [draggingId, setDraggingId] = useState(null);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
 
-    // Modais (Estados de Visibilidade)
+    // Modais e Formulários
     const [modalState, setModalState] = useState({ type: null, data: null }); 
-    // Types: 'createNote', 'createTopic', 'editTopic', 'joinTopic', 'shareTopic'
+    const [formData, setFormData] = useState({ title: "", content: "", color: "yellow", topicId: "", name: "", joinCode: "" });
+    
+    // ESTADOS PARA OS POPUPS PERSONALIZADOS
+    const [alertMsg, setAlertMsg] = useState(null);
+    const [confirmState, setConfirmState] = useState({ show: false, action: null, id: null, name: null });
 
-    // Form States
-    const [formData, setFormData] = useState({ 
-        title: "", content: "", color: "yellow", topicId: "", name: "", joinCode: "" 
-    });
+    const draggingIdRef = useRef(null);
+    draggingIdRef.current = draggingId;
 
     useEffect(() => {
-        if (token) carregarDados();
+        if (!token) return;
+        carregarDados();
+        const intervalId = setInterval(() => {
+            if (draggingIdRef.current === null) carregarDados(true); 
+        }, 2000);
+        return () => clearInterval(intervalId);
     }, [token]);
 
     const authFetch = (url, options = {}) => {
@@ -116,18 +157,23 @@ function App() {
         try {
             const resNotes = await authFetch('/api/notes');
             if (resNotes.status === 401) return logout();
-            setNotes(await resNotes.json());
+            const notesData = await resNotes.json();
+            
+            if (draggingIdRef.current === null) {
+                setNotes(notesData);
+            }
 
             const resTopics = await authFetch('/api/topics');
             const loadedTopics = await resTopics.json();
             setTopics(loadedTopics);
 
-            if (loadedTopics.length > 0) {
-                setActiveTopicId(prev => loadedTopics.find(t => t._id === prev) ? prev : loadedTopics[0]._id);
-            } else {
-                setActiveTopicId(null);
-            }
-        } catch (error) { console.error(error); }
+            setActiveTopicId(prev => {
+                if (prev && loadedTopics.find(t => t._id === prev)) return prev;
+                return loadedTopics.length > 0 ? loadedTopics[0]._id : null;
+            });
+        } catch (error) { 
+            if (error.message !== "Failed to fetch") console.error(error); 
+        }
     };
 
     const handleLogin = (newToken, email) => {
@@ -143,7 +189,7 @@ function App() {
         setNotes([]);
     };
 
-    // --- Drag & Drop ---
+    // --- Drag ---
     const handleMouseDown = (e, id) => {
         if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
         const note = notes.find(n => n._id === id);
@@ -162,15 +208,41 @@ function App() {
         if (!draggingId) return;
         const note = notes.find(n => n._id === draggingId);
         setNotes(prev => prev.map(n => n._id === draggingId ? { ...n, isDragging: false } : n));
-        setDraggingId(null);
         await authFetch(`/api/notes?id=${note._id}`, { method: 'PUT', body: JSON.stringify({ x: note.x, y: note.y }) });
+        setDraggingId(null);
+        carregarDados();
     };
 
-    // --- CRUD Operations ---
+    // --- ELIMINAÇÃO COM POPUP PERSONALIZADO ---
+    
+    // 1. Quando clica no lixo da Nota
+    const clickDeleteNote = (id) => {
+        setConfirmState({ show: true, action: 'note', id: id });
+    };
+
+    // 2. Quando clica no lixo do Tópico
+    const clickDeleteTopic = (e, id, name) => {
+        e.stopPropagation();
+        setConfirmState({ show: true, action: 'topic', id: id, name: name });
+    };
+
+    // 3. Quando confirma "Sim, apagar"
+    const executeDelete = async () => {
+        if (confirmState.action === 'note') {
+            await authFetch(`/api/notes?id=${confirmState.id}`, { method: 'DELETE' });
+            setNotes(prev => prev.filter(n => n._id !== confirmState.id));
+        } else if (confirmState.action === 'topic') {
+            await authFetch(`/api/topics?id=${confirmState.id}`, { method: 'DELETE' });
+            carregarDados();
+        }
+        setConfirmState({ show: false, action: null, id: null });
+    };
+
+    // --- OUTRAS AÇÕES ---
     const handleSaveNote = async () => {
-        if (!formData.title) return alert("Título obrigatório!");
+        if (!formData.title) return setAlertMsg("Título obrigatório!");
         const topicToUse = formData.topicId || activeTopicId;
-        if (!topicToUse) return alert("Crie um tópico primeiro!");
+        if (!topicToUse) return setAlertMsg("Crie um tópico primeiro!");
 
         const newNote = { 
             title: formData.title, content: formData.content, color: formData.color, 
@@ -178,12 +250,6 @@ function App() {
         };
         await authFetch('/api/notes', { method: 'POST', body: JSON.stringify(newNote) });
         closeModal(); carregarDados();
-    };
-
-    const handleDeleteNote = async (id) => {
-        if(!confirm("Apagar nota?")) return;
-        await authFetch(`/api/notes?id=${id}`, { method: 'DELETE' });
-        setNotes(notes.filter(n => n._id !== id));
     };
 
     const handleSaveTopic = async () => {
@@ -197,30 +263,22 @@ function App() {
         closeModal(); carregarDados();
     };
 
-    const handleDeleteTopic = async (e, id, name) => {
-        e.stopPropagation();
-        if (!confirm(`Apagar tópico "${name}" e ocultar as suas notas?`)) return;
-        await authFetch(`/api/topics?id=${id}`, { method: 'DELETE' });
-        carregarDados();
-    };
-
-    // --- NOVAS FUNÇÕES (Partilha) ---
     const handleJoinTopic = async () => {
-        if (!formData.joinCode) return alert("Insira o código!");
+        if (!formData.joinCode) return setAlertMsg("Insira o código!");
         const res = await authFetch('/api/topics/join', { method: 'POST', body: JSON.stringify({ code: formData.joinCode }) });
-        if (!res.ok) return alert("Código inválido ou erro ao entrar.");
-        
+        if (!res.ok) return setAlertMsg("Código inválido ou erro ao entrar.");
         closeModal(); 
         carregarDados();
-        alert("Entraste no tópico com sucesso!");
+        setAlertMsg("Entraste no tópico com sucesso!");
     };
 
     const copyToClipboard = (text) => {
+        if(!text) return setAlertMsg("Este tópico não tem código. Cria um novo!");
         navigator.clipboard.writeText(text);
-        alert("Código copiado!");
+        setAlertMsg("Código copiado!");
     };
 
-    // --- Modal Helpers ---
+    // --- Modais ---
     const openModal = (type, data = null) => {
         setModalState({ type, data });
         setFormData({ 
@@ -258,9 +316,9 @@ function App() {
                                 <li key={t._id} className={activeTopicId === t._id ? 'active' : ''} onClick={() => setActiveTopicId(t._id)}>
                                     <span>{t.name}</span>
                                     <div className="topic-actions-group">
-                                        <button className="icon-btn share" title="Partilhar Código" onClick={(e) => { e.stopPropagation(); openModal('shareTopic', t); }}>🔗</button>
+                                        <button className="icon-btn share" title="Partilhar" onClick={(e) => { e.stopPropagation(); openModal('shareTopic', t); }}>🔗</button>
                                         <button className="icon-btn" title="Editar" onClick={(e) => { e.stopPropagation(); openModal('editTopic', t); }}>✎</button>
-                                        <button className="icon-btn delete" title="Apagar" onClick={(e) => handleDeleteTopic(e, t._id, t.name)}>&times;</button>
+                                        <button className="icon-btn delete" title="Apagar" onClick={(e) => clickDeleteTopic(e, t._id, t.name)}>&times;</button>
                                     </div>
                                 </li>
                             ))}
@@ -284,11 +342,11 @@ function App() {
                     </div>
                 </header>
                 <div id="notes-grid">
-                    {filteredNotes.map(n => <Note key={n._id} note={n} onMouseDown={handleMouseDown} onDelete={handleDeleteNote} />)}
+                    {filteredNotes.map(n => <Note key={n._id} note={n} onMouseDown={handleMouseDown} onDelete={clickDeleteNote} />)}
                 </div>
             </main>
 
-            {/* --- MODAIS --- */}
+            {/* --- MODAIS DE FORMULÁRIO --- */}
             {modalState.type && (
                 <div id="modal-overlay">
                     <div id="modal-content" className={['createTopic', 'joinTopic', 'shareTopic'].includes(modalState.type) ? 'small-modal' : ''}>
@@ -345,8 +403,9 @@ function App() {
                             <h2>Partilhar</h2>
                             <p className="small-text">Envia este código aos teus amigos:</p>
                             <div className="share-code-display" onClick={() => copyToClipboard(modalState.data.shareCode)}>
-                                {modalState.data.shareCode}
+                                {modalState.data.shareCode || "SEM CÓDIGO"}
                             </div>
+                            {!modalState.data.shareCode && <p style={{color:'red', fontSize:'10px', textAlign:'center'}}>Tópico antigo. Cria um novo para teres código.</p>}
                             <p className="small-text" style={{fontSize:'10px'}}>(Clica para copiar)</p>
                             <div className="modal-actions">
                                 <button id="btn-save" style={{width:'100%'}} onClick={closeModal}>Fechar</button>
@@ -355,6 +414,18 @@ function App() {
 
                     </div>
                 </div>
+            )}
+
+            {/* --- ALERTA (Aviso) --- */}
+            <CustomAlert message={alertMsg} onClose={() => setAlertMsg(null)} />
+
+            {/* --- CONFIRMAÇÃO (Apagar) --- */}
+            {confirmState.show && (
+                <CustomConfirm 
+                    message={confirmState.action === 'note' ? "Tens a certeza que queres apagar esta nota?" : "Tens a certeza que queres apagar este tópico?"}
+                    onConfirm={executeDelete}
+                    onCancel={() => setConfirmState({ show: false, action: null })}
+                />
             )}
         </div>
     );
